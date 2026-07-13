@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "yeelight-cloud": {
+      "url": "https://api.yeelight.com/apis/mcp_server/v1/mcp",
+      "headers": {
+        "Authorization": "${YEELIGHT_AUTHORIZATION}",
+        "Client-Id": "${YEELIGHT_CLIENT_ID}",
+        "House-Id": "${YEELIGHT_HOUSE_ID}"
+      }
+    },
+    "yeelight-metadata": {
+      "url": "https://api.yeelight.com/apis/metadata_mcp_server/v1/mcp",
+      "headers": {
+        "Authorization": "${YEELIGHT_AUTHORIZATION}",
+        "Client-Id": "${YEELIGHT_CLIENT_ID}",
+        "House-Id": "${YEELIGHT_HOUSE_ID}"
+      }
+    }
+  }
+}

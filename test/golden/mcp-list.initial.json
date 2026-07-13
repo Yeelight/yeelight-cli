@@ -1,0 +1,23 @@
+[
+  {
+    "id": "cloud",
+    "enabled": "yes",
+    "configured": "no",
+    "reachable": "unknown",
+    "notes": "控制和查询工具"
+  },
+  {
+    "id": "metadata",
+    "enabled": "yes",
+    "configured": "no",
+    "reachable": "unknown",
+    "notes": "任务模型工具"
+  },
+  {
+    "id": "lan",
+    "enabled": "no",
+    "configured": "pending",
+    "reachable": "unknown",
+    "notes": "需要配置 gateway IP"
+  }
+]

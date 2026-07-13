@@ -1,0 +1,49 @@
+{
+  "name": "yeelight-ai",
+  "version": "0.0.4",
+  "description": "Unified CLI for Yeelight Cloud, Metadata, and LAN MCP services",
+  "type": "commonjs",
+  "bin": {
+    "yeelight-ai": "bin/yeelight-ai.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "!src/auth/qrClient.js",
+    "!src/auth/qrLogin.js",
+    "!src/auth/qrProtocol.js",
+    "!src/commands/release.js",
+    "!src/output/qrcode.js",
+    "!src/security/releaseGate.js",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "guides"
+  ],
+  "scripts": {
+    "start": "node bin/yeelight-ai.js",
+    "test": "node --test",
+    "smoke": "node bin/yeelight-ai.js --help"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yeelight/yeelight-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Yeelight/yeelight-cli/issues"
+  },
+  "homepage": "https://github.com/Yeelight/yeelight-cli#readme",
+  "keywords": [
+    "yeelight",
+    "mcp",
+    "smart-home",
+    "cli"
+  ],
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  }
+}

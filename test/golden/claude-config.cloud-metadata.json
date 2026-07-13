@@ -1,0 +1,40 @@
+{
+  "mcpServers": {
+    "yeelight-cloud": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://api.yeelight.com/apis/mcp_server/v1/mcp",
+        "--header",
+        "Authorization:${YEELIGHT_AUTHORIZATION}",
+        "--header",
+        "Client-Id:${YEELIGHT_CLIENT_ID}",
+        "--header",
+        "House-Id:${YEELIGHT_HOUSE_ID}"
+      ],
+      "env": {
+        "YEELIGHT_AUTHORIZATION": "${YEELIGHT_AUTHORIZATION}",
+        "YEELIGHT_CLIENT_ID": "${YEELIGHT_CLIENT_ID}",
+        "YEELIGHT_HOUSE_ID": "${YEELIGHT_HOUSE_ID}"
+      }
+    },
+    "yeelight-metadata": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://api.yeelight.com/apis/metadata_mcp_server/v1/mcp",
+        "--header",
+        "Authorization:${YEELIGHT_AUTHORIZATION}",
+        "--header",
+        "Client-Id:${YEELIGHT_CLIENT_ID}",
+        "--header",
+        "House-Id:${YEELIGHT_HOUSE_ID}"
+      ],
+      "env": {
+        "YEELIGHT_AUTHORIZATION": "${YEELIGHT_AUTHORIZATION}",
+        "YEELIGHT_CLIENT_ID": "${YEELIGHT_CLIENT_ID}",
+        "YEELIGHT_HOUSE_ID": "${YEELIGHT_HOUSE_ID}"
+      }
+    }
+  }
+}
