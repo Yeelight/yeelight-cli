@@ -2,16 +2,17 @@
 
 const readline = require("readline");
 const { getBooleanFlag, getStringFlag, hasFlag, parseArgs } = require("../args");
+const { BIZ_TYPE_OPTIONS, DEFAULT_BIZ_TYPE, formatBizTypeWithCode, normalizeBizType } = require("../config/bizType");
 const { loadConfig, saveConfig } = require("../config/store");
 const { redactProfile } = require("../config/redact");
 const { CliError } = require("../errors");
 const { writeJson } = require("../output/json");
 const { HouseClient } = require("../auth/houseClient");
-const { PasswordLoginClient } = require("../auth/passwordClient");
+const { generateQrLoginClientDeviceId, normalizeClientDeviceId } = require("../auth/qrProtocol");
 const { normalizeAuthorization } = require("../security/bearer");
-const { isInternalMode } = require("../internal");
 
-const LOGIN_METHODS = new Set(["password", "qr", "manual"]);
+const LOGIN_METHODS = new Set(["qr", "manual"]);
+const PASSWORD_LOGIN_REMOVED_MESSAGE = "账密登录已移除，请使用扫码登录或手动 token。";
 
 async function runLoginCommand(argv, io) {
   const { flags } = parseArgs(argv);
@@ -30,7 +31,7 @@ async function runLoginCommand(argv, io) {
   if (explicitManual && methodFlag) {
     throw new CliError("login --manual 不能和 --method 同时使用。");
   }
-  const method = await resolveLoginMethod({ flags, methodFlag, explicitQr, explicitManual, io, internal: isInternalMode(io.env) });
+  const method = await resolveLoginMethod({ flags, methodFlag, explicitQr, explicitManual, io });
 
   if (method === "qr") {
     return runQrLogin(flags, {
@@ -40,19 +41,10 @@ async function runLoginCommand(argv, io) {
       io,
     });
   }
-  if (method === "password") {
-    return runPasswordLogin(flags, {
-      asJson,
-      profileName,
-      config,
-      current,
-      io,
-    });
-  }
-
   const authorizationInput = getStringFlag(flags, "authorization", "");
   const clientIdInput = getStringFlag(flags, "client-id", "");
   const houseIdInput = getStringFlag(flags, "house-id", "");
+  const explicitBizType = getExplicitBizType(flags);
 
   const shouldPrompt = explicitManual || (!authorizationInput && !clientIdInput && !houseIdInput);
   const promptDefaults = {
@@ -69,6 +61,12 @@ async function runLoginCommand(argv, io) {
   if (!authorization) {
     throw new CliError("Authorization 不能为空。");
   }
+  const bizType = await resolveBizType({
+    explicitBizType,
+    currentBizType: current.bizType,
+    io,
+    asJson,
+  });
   const selectedHouseId = await resolveHouseId({
     flags,
     io,
@@ -76,16 +74,18 @@ async function runLoginCommand(argv, io) {
     credentials: {
       authorization,
       clientId,
+      bizType,
     },
     explicitHouseId: houseId,
     currentHouseId: current.houseId,
-    baseUrl: getStringFlag(flags, "base-url", io.env.YEELIGHT_PASSWORD_LOGIN_BASE_URL || ""),
+    baseUrl: getStringFlag(flags, "base-url", io.env.YEELIGHT_QR_LOGIN_BASE_URL || ""),
   });
 
   config.auth.profiles[profileName] = {
     authorization,
     clientId,
     houseId: selectedHouseId,
+    bizType,
   };
   const path = saveConfig(config, { env: io.env });
   const result = {
@@ -102,155 +102,84 @@ async function runLoginCommand(argv, io) {
     io.stdout.write(`Authorization：${result.credentials.authorization}\n`);
     io.stdout.write(`Client-Id：${result.credentials.clientId}\n`);
     io.stdout.write(`House-Id：${result.credentials.houseId}\n`);
+    io.stdout.write(`业务类型：${formatBizTypeWithCode(bizType)}\n`);
   }
   return 0;
 }
 
 async function resolveLoginMethod(options) {
   const flags = options.flags;
-  const allowQr = Boolean(options.internal);
   if (options.explicitQr) {
-    if (!allowQr) {
-      throw new CliError("扫码登录暂未开放，请使用账密登录或手动 token。");
-    }
     return "qr";
-  }
-  if (options.explicitManual || hasFlag(flags, "authorization")) {
-    if (options.methodFlag && options.methodFlag.toLowerCase() !== "manual") {
-      throw new CliError("--authorization 只能用于 manual 登录方式。");
-    }
-    return "manual";
   }
   if (options.methodFlag) {
     const method = options.methodFlag.toLowerCase();
-    if (!LOGIN_METHODS.has(method)) {
-      throw new CliError(`不支持的登录方式：${options.methodFlag}。可选：${formatLoginMethods(allowQr)}。`);
+    if (method === "password") {
+      throw new CliError(PASSWORD_LOGIN_REMOVED_MESSAGE);
     }
-    if (method === "qr" && !allowQr) {
-      throw new CliError("扫码登录暂未开放，请使用账密登录或手动 token。");
+    if (!LOGIN_METHODS.has(method)) {
+      throw new CliError(`不支持的登录方式：${options.methodFlag}。可选：${formatLoginMethods()}。`);
     }
     if (method === "qr" && hasQrConflictInput(flags)) {
       throw new CliError("login --method qr 不能和 --authorization、--client-id、--account 或 --password 同时使用。");
     }
+    if (method === "manual" && hasPasswordLoginInput(flags)) {
+      throw new CliError(PASSWORD_LOGIN_REMOVED_MESSAGE);
+    }
     return method;
   }
-  if (hasFlag(flags, "account") || hasFlag(flags, "password")) {
-    return "password";
+  if (hasPasswordLoginInput(flags)) {
+    throw new CliError(PASSWORD_LOGIN_REMOVED_MESSAGE);
   }
-  if (getBooleanFlag(flags, "json", false)) {
-    throw new CliError(allowQr ? "请通过 --method password、--method qr 或 --authorization 指定登录方式。" : "请通过 --method password 或 --authorization 指定登录方式。");
+  if (options.explicitManual || hasFlag(flags, "authorization")) {
+    return "manual";
   }
-  return promptForLoginMethod(options.io, { allowQr });
+  if (hasFlag(flags, "client-id")) {
+    throw new CliError("扫码登录不能和 --client-id 同时使用；需要手动 token 请使用 --manual 或 --authorization。");
+  }
+  if (shouldPromptForLoginMethod(options)) {
+    return promptForLoginMethod(options.io);
+  }
+  return "qr";
 }
 
 function hasQrConflictInput(flags) {
   return hasFlag(flags, "authorization") || hasFlag(flags, "client-id") || hasFlag(flags, "account") || hasFlag(flags, "password");
 }
 
-function formatLoginMethods(allowQr) {
-  return allowQr ? "password、qr、manual" : "password、manual";
+function hasPasswordLoginInput(flags) {
+  return hasFlag(flags, "account") || hasFlag(flags, "password");
 }
 
-async function promptForLoginMethod(io, options = {}) {
-  const allowQr = Boolean(options.allowQr);
+function formatLoginMethods() {
+  return "qr、manual";
+}
+
+function shouldPromptForLoginMethod(options) {
+  return Boolean(options.io && options.io.stdin && options.io.stdin.isTTY && !getBooleanFlag(options.flags, "json", false));
+}
+
+async function promptForLoginMethod(io) {
   io.stderr.write("请选择登录方式：\n");
-  io.stderr.write("  1. password 账密登录（推荐，当前可用）\n");
-  if (allowQr) {
-    io.stderr.write("  2. qr 扫码登录（内部预览）\n");
-    io.stderr.write("  3. manual 手动粘贴 token\n");
-  } else {
-    io.stderr.write("  2. manual 手动粘贴 token\n");
-  }
+  io.stderr.write("  1. 扫码登录（推荐，默认）\n");
+  io.stderr.write("  2. 手动粘贴 token\n");
   const rl = readline.createInterface({
     input: io.stdin,
     output: io.stderr,
   });
   try {
-    const prompt = allowQr ? "登录方式 [password/qr/manual，默认 password]: " : "登录方式 [password/manual，默认 password]: ";
-    const answer = (await question(rl, prompt)).toLowerCase();
-    if (!answer || answer === "1" || answer === "password") {
-      return "password";
-    }
-    if (allowQr && (answer === "2" || answer === "qr")) {
+    const answer = (await question(rl, "登录方式 [qr/manual，默认 qr]: ")).toLowerCase();
+    if (!answer || answer === "1" || answer === "qr") {
       return "qr";
     }
-    if (answer === "manual" || (!allowQr && answer === "2") || (allowQr && answer === "3")) {
+    if (answer === "2" || answer === "manual" || answer === "token" || answer === "手动") {
       return "manual";
-    }
-    if (answer === "qr") {
-      throw new CliError("扫码登录暂未开放，请使用账密登录或手动 token。");
     }
     throw new CliError(`不支持的登录方式：${answer}`);
   } finally {
     rl.close();
   }
 }
-
-async function runPasswordLogin(flags, context) {
-  if (hasFlag(flags, "authorization")) {
-    throw new CliError("账密登录不能和 --authorization 同时使用。");
-  }
-  const accountInput = getStringFlag(flags, "account", "");
-  const passwordInput = getStringFlag(flags, "password", "");
-  const clientIdInput = getStringFlag(flags, "client-id", "");
-  const houseIdInput = getStringFlag(flags, "house-id", "");
-  const answers = accountInput && passwordInput
-    ? {}
-    : await promptForPasswordLogin(context.io, { account: accountInput });
-  const account = accountInput || answers.account;
-  const password = passwordInput || answers.password;
-  if (!account) {
-    throw new CliError("账号不能为空。");
-  }
-  if (!password) {
-    throw new CliError("密码不能为空。");
-  }
-
-  const client = new PasswordLoginClient({
-    baseUrl: getStringFlag(flags, "base-url", context.io.env.YEELIGHT_PASSWORD_LOGIN_BASE_URL || ""),
-  });
-  const credentials = await client.login({ account, password });
-  if (!credentials.authorization) {
-    throw new CliError("账密登录成功响应中没有 access token。");
-  }
-  const selectedHouseId = await resolveHouseId({
-    flags,
-    io: context.io,
-    asJson: context.asJson,
-    credentials: {
-      authorization: credentials.authorization,
-      clientId: clientIdInput || credentials.clientId || context.current.clientId || "",
-    },
-    explicitHouseId: houseIdInput,
-    currentHouseId: context.current.houseId,
-    baseUrl: getStringFlag(flags, "base-url", context.io.env.YEELIGHT_PASSWORD_LOGIN_BASE_URL || ""),
-  });
-
-  context.config.auth.profiles[context.profileName] = {
-    authorization: credentials.authorization,
-    clientId: clientIdInput || credentials.clientId || context.current.clientId || "",
-    houseId: selectedHouseId || credentials.houseId || context.current.houseId || "",
-  };
-  const path = saveConfig(context.config, { env: context.io.env });
-  const result = {
-    ok: true,
-    method: "password",
-    path,
-    profile: context.profileName,
-    credentials: redactProfile(context.config.auth.profiles[context.profileName]),
-  };
-
-  if (context.asJson) {
-    writeJson(context.io, result);
-  } else {
-    context.io.stdout.write(`已通过账密登录并保存凭证：${context.profileName}\n`);
-    context.io.stdout.write(`Authorization：${result.credentials.authorization}\n`);
-    context.io.stdout.write(`Client-Id：${result.credentials.clientId}\n`);
-    context.io.stdout.write(`House-Id：${result.credentials.houseId}\n`);
-  }
-  return 0;
-}
-
 async function resolveHouseId(options) {
   if (options.explicitHouseId) {
     return options.explicitHouseId;
@@ -274,18 +203,88 @@ async function resolveHouseId(options) {
   return promptForHouseSelection(options.io, houses);
 }
 
+function getExplicitBizType(flags) {
+  const value = getStringFlag(flags, "biz-type", "") || getStringFlag(flags, "bizType", "");
+  if (!value) {
+    return "";
+  }
+  const normalized = normalizeBizType(value, "");
+  if (!normalized) {
+    throw new CliError(`不支持的业务类型：${value}。可选：0（普通家庭）、1（商照项目）。`);
+  }
+  return normalized;
+}
+
+async function resolveBizType(options) {
+  if (options.explicitBizType) {
+    return options.explicitBizType;
+  }
+  if (shouldPromptForBizType(options)) {
+    return promptForBizType(options.io, options.currentBizType);
+  }
+  return normalizeBizType(options.currentBizType, DEFAULT_BIZ_TYPE);
+}
+
+function shouldPromptForBizType(options) {
+  return Boolean(options.io && options.io.stdin && options.io.stdin.isTTY && !options.asJson);
+}
+
+async function promptForBizType(io, currentBizType) {
+  const current = normalizeBizType(currentBizType, DEFAULT_BIZ_TYPE);
+  io.stderr.write("请选择家庭类型：\n");
+  BIZ_TYPE_OPTIONS.forEach((option) => {
+    const suffix = option.value === current ? "（默认）" : "";
+    io.stderr.write(`  ${option.value}. ${option.label}${suffix}\n`);
+  });
+  const rl = readline.createInterface({
+    input: io.stdin,
+    output: io.stderr,
+  });
+
+  try {
+    const answer = await question(rl, `家庭类型 [0/1，默认 ${current}]: `);
+    return selectBizType(answer, current);
+  } finally {
+    rl.close();
+  }
+}
+
+function selectBizType(answer, fallback) {
+  const text = String(answer || "").trim();
+  if (!text) {
+    return fallback;
+  }
+  const normalized = normalizeBizType(text, "");
+  if (!normalized) {
+    throw new CliError(`无效的家庭类型：${answer}`);
+  }
+  return normalized;
+}
+
 async function runQrLogin(flags, context) {
   const { runQrLoginFlow } = require("../auth/qrLogin");
+  const resolvedClientDevice = resolveQrLoginClientDeviceId(flags, context);
+  const previous = ensureProfile(context.config, context.profileName);
+  const explicitBizType = getExplicitBizType(flags);
+  const bizType = await resolveBizType({
+    explicitBizType,
+    currentBizType: previous.bizType,
+    io: context.io,
+    asJson: context.asJson,
+  });
+  if (resolvedClientDevice.changed) {
+    saveConfig(context.config, { env: context.io.env });
+  }
   const qrResult = await runQrLoginFlow({
     io: context.io,
     json: context.asJson,
     baseUrl: getStringFlag(flags, "base-url", context.io.env.YEELIGHT_QR_LOGIN_BASE_URL || ""),
-    device: getStringFlag(flags, "device", context.io.env.YEELIGHT_QR_LOGIN_DEVICE || ""),
-    projectId: getStringFlag(flags, "project-id", ""),
+    clientDeviceId: resolvedClientDevice.clientDeviceId,
     houseId: getStringFlag(flags, "house-id", ""),
     timeoutMs: Number(getStringFlag(flags, "timeout-ms", "") || 180000),
     pollIntervalMs: Number(getStringFlag(flags, "poll-interval-ms", "") || 3000),
     noWait: getBooleanFlag(flags, "no-wait", false),
+    bizType,
   });
 
   if (!qrResult.credentials) {
@@ -293,7 +292,7 @@ async function runQrLogin(flags, context) {
       ok: true,
       status: qrResult.status,
       qrCodeId: qrResult.qrCodeId,
-      device: qrResult.device,
+      clientDeviceId: qrResult.clientDeviceId,
       payload: qrResult.payload,
       expireAt: qrResult.expireAt,
     };
@@ -305,7 +304,6 @@ async function runQrLogin(flags, context) {
     return 0;
   }
 
-  const previous = ensureProfile(context.config, context.profileName);
   const authorization = qrResult.credentials.authorization;
   const clientId = qrResult.credentials.clientId || previous.clientId || "";
   const houseId = qrResult.credentials.houseId || getStringFlag(flags, "house-id", "");
@@ -316,6 +314,7 @@ async function runQrLogin(flags, context) {
     credentials: {
       authorization,
       clientId,
+      bizType,
     },
     explicitHouseId: houseId,
     currentHouseId: previous.houseId,
@@ -325,6 +324,7 @@ async function runQrLogin(flags, context) {
     authorization,
     clientId,
     houseId: selectedHouseId,
+    bizType,
   };
   const path = saveConfig(context.config, { env: context.io.env });
   const result = {
@@ -342,8 +342,66 @@ async function runQrLogin(flags, context) {
     context.io.stdout.write(`Authorization：${result.credentials.authorization}\n`);
     context.io.stdout.write(`Client-Id：${result.credentials.clientId}\n`);
     context.io.stdout.write(`House-Id：${result.credentials.houseId}\n`);
+    context.io.stdout.write(`业务类型：${formatBizTypeWithCode(bizType)}\n`);
   }
   return 0;
+}
+
+function resolveQrLoginClientDeviceId(flags, context) {
+  const explicit = normalizeClientDeviceId(
+    getStringFlag(flags, "client-device-id", "") || getStringFlag(flags, "device", context.io.env.YEELIGHT_QR_LOGIN_DEVICE || "")
+  );
+  if (explicit) {
+    return {
+      clientDeviceId: explicit,
+      changed: false,
+    };
+  }
+
+  const qrLogin = ensureQrLoginConfig(context.config);
+  const current = normalizeClientDeviceId(qrLogin.clientDeviceId);
+  if (current) {
+    if (isLegacyGeneratedQrLoginClientDeviceId(current)) {
+      qrLogin.clientDeviceId = generateQrLoginClientDeviceId();
+      return {
+        clientDeviceId: qrLogin.clientDeviceId,
+        changed: true,
+      };
+    }
+    if (current !== qrLogin.clientDeviceId) {
+      qrLogin.clientDeviceId = current;
+      return {
+        clientDeviceId: current,
+        changed: true,
+      };
+    }
+    return {
+      clientDeviceId: current,
+      changed: false,
+    };
+  }
+
+  qrLogin.clientDeviceId = generateQrLoginClientDeviceId();
+  return {
+    clientDeviceId: qrLogin.clientDeviceId,
+    changed: true,
+  };
+}
+
+function ensureQrLoginConfig(config) {
+  if (!config.auth) {
+    config.auth = { profiles: {} };
+  }
+  if (!config.auth.qrLogin || typeof config.auth.qrLogin !== "object") {
+    config.auth.qrLogin = {
+      clientDeviceId: "",
+    };
+  }
+  return config.auth.qrLogin;
+}
+
+function isLegacyGeneratedQrLoginClientDeviceId(value) {
+  return /^cli_[0-9a-f]{16}$/.test(value);
 }
 
 function ensureProfile(config, profileName) {
@@ -358,6 +416,7 @@ function ensureProfile(config, profileName) {
       authorization: "",
       clientId: "",
       houseId: "",
+      bizType: DEFAULT_BIZ_TYPE,
     };
   }
   return config.auth.profiles[profileName];
@@ -374,21 +433,6 @@ async function promptForCredentials(io, current) {
     const clientId = await question(rl, `Client-Id${current.clientId ? "（回车保留当前值）" : ""}: `);
     const houseId = await question(rl, `House-Id${current.houseId ? "（回车保留当前值）" : ""}: `);
     return { authorization, clientId, houseId };
-  } finally {
-    rl.close();
-  }
-}
-
-async function promptForPasswordLogin(io, current) {
-  const rl = readline.createInterface({
-    input: io.stdin,
-    output: io.stderr,
-  });
-
-  try {
-    const account = current.account || await question(rl, "账号（手机号/邮箱）: ");
-    const password = await questionHidden(rl, "密码: ");
-    return { account, password };
   } finally {
     rl.close();
   }
@@ -430,28 +474,6 @@ function selectHouse(answer, houses) {
   return houses.find((house) => house.houseId === text);
 }
 
-function questionHidden(rl, prompt) {
-  const output = rl.output;
-  const originalWrite = output && output.write;
-  if (!output || typeof originalWrite !== "function") {
-    return question(rl, prompt);
-  }
-  return new Promise((resolve) => {
-    output.write(prompt);
-    output.write = function writeMasked(value) {
-      if (String(value).includes("\n")) {
-        return originalWrite.apply(output, arguments);
-      }
-      return true;
-    };
-    rl.question("", (answer) => {
-      output.write = originalWrite;
-      output.write("\n");
-      resolve(answer.trim());
-    });
-  });
-}
-
 function question(rl, prompt) {
   return new Promise((resolve) => {
     rl.question(prompt, (answer) => resolve(answer.trim()));
@@ -459,5 +481,7 @@ function question(rl, prompt) {
 }
 
 module.exports = {
+  promptForLoginMethod,
   runLoginCommand,
+  selectBizType,
 };

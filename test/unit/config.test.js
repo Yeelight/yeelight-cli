@@ -13,6 +13,8 @@ test("默认配置启用 cloud 和 metadata，lan 等待 gateway IP", () => {
   assert.equal(config.mcp.metadata.enabled, true);
   assert.equal(config.mcp.lan.enabled, false);
   assert.equal(config.mcp.lan.status, "requires_gateway_ip");
+  assert.equal(config.auth.qrLogin.clientDeviceId, "");
+  assert.equal(config.auth.profiles.default.bizType, "1");
   assert.equal(config.security.defaultDryRun, true);
   assert.equal(config.security.bindHost, "127.0.0.1");
 });
@@ -22,12 +24,14 @@ test("配置脱敏不会泄露完整凭证", () => {
   config.auth.profiles.default.authorization = "Bearer abcdefghijklmnopqrstuvwxyz";
   config.auth.profiles.default.clientId = "client-1234567890";
   config.auth.profiles.default.houseId = "house-1234567890";
+  config.auth.profiles.default.bizType = "0";
 
   const redacted = redactConfig(config);
 
   assert.equal(redacted.auth.profiles.default.authorization, "Bear...wxyz");
   assert.equal(redacted.auth.profiles.default.clientId, "clie...7890");
   assert.equal(redacted.auth.profiles.default.houseId, "****");
+  assert.equal(redacted.auth.profiles.default.bizType, "0");
 });
 
 test("旧 metadata endpoint 会迁移到正式 endpoint", () => {

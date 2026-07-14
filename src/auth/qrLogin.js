@@ -11,10 +11,10 @@ const {
   extractClientId,
   extractHouseId,
   extractToken,
-  generateQrLoginDevice,
+  generateQrLoginClientDeviceId,
   isExpiredStatus,
   isLoginStatus,
-  normalizeDeviceMac,
+  normalizeClientDeviceId,
   normalizeQrLoginBaseUrl,
 } = require("./qrProtocol");
 
@@ -24,20 +24,21 @@ async function runQrLoginFlow(options = {}) {
     baseUrl: options.baseUrl,
     fetch: options.fetch,
     timeoutMs: options.requestTimeoutMs,
+    bizType: options.bizType,
   });
-  const device = normalizeDeviceMac(options.device) || generateQrLoginDevice();
-  const created = await client.create(device);
+  const clientDeviceId = normalizeClientDeviceId(options.clientDeviceId || options.device) || generateQrLoginClientDeviceId();
+  const created = await client.create(clientDeviceId);
   const qrCodeId = created.qrCodeId;
   if (!qrCodeId) {
     throw new CliError("扫码登录接口未返回 qrCodeId。");
   }
 
-  const payload = buildQrPayload(qrCodeId, device, { projectId: options.projectId || options.houseId });
+  const payload = buildQrPayload(qrCodeId, clientDeviceId);
   if (!options.json && io) {
     printQrLoginPrompt(io, {
       payload,
       qrCodeId,
-      device,
+      clientDeviceId,
       baseUrl: normalizeQrLoginBaseUrl(options.baseUrl),
       expireAt: created.expireAt,
     });
@@ -47,7 +48,7 @@ async function runQrLoginFlow(options = {}) {
       ok: true,
       status: created.status || "CREATED",
       qrCodeId,
-      device,
+      clientDeviceId,
       payload,
       expireAt: created.expireAt || null,
       credentials: null,
@@ -79,7 +80,7 @@ async function runQrLoginFlow(options = {}) {
       ok: true,
       status: lastStatus,
       qrCodeId,
-      device,
+      clientDeviceId,
       payload,
       expireAt: checked.expireAt || created.expireAt || null,
       credentials: {
@@ -97,7 +98,7 @@ function printQrLoginPrompt(io, details) {
   io.stdout.write("请使用 Yeelight / 易来 APP 扫描下面的二维码，并在手机上确认授权。\n\n");
   io.stdout.write(`${renderQrTerminal(details.payload)}\n`);
   io.stdout.write(`二维码 ID：${details.qrCodeId}\n`);
-  io.stdout.write(`设备标识：${details.device}\n`);
+  io.stdout.write(`CLI 设备标识：${details.clientDeviceId}\n`);
   if (details.expireAt) {
     io.stdout.write(`过期时间：${new Date(Number(details.expireAt)).toLocaleString("zh-CN", { hour12: false })}\n`);
   }

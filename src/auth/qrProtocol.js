@@ -3,7 +3,6 @@
 const crypto = require("crypto");
 
 const DEFAULT_QR_LOGIN_BASE_URL = "https://api.yeelight.com";
-const DEFAULT_QR_LOGIN_DEVICE = "F8:24:41:00:00:01";
 const DEFAULT_QR_LOGIN_POLL_INTERVAL_MS = 3000;
 const DEFAULT_QR_LOGIN_TIMEOUT_MS = 180000;
 
@@ -12,30 +11,16 @@ function normalizeQrLoginBaseUrl(value) {
   return text || DEFAULT_QR_LOGIN_BASE_URL;
 }
 
-function normalizeDeviceMac(value) {
-  const raw = String(value || "").trim();
-  if (!raw) {
-    return "";
-  }
-  if (/^[0-9a-fA-F]{12}$/.test(raw)) {
-    return raw.match(/.{1,2}/g).join(":").toUpperCase();
-  }
-  if (/^[0-9a-fA-F]{2}(:[0-9a-fA-F]{2}){5}$/.test(raw)) {
-    return raw.toUpperCase();
-  }
-  return raw;
+function normalizeClientDeviceId(value) {
+  return String(value || "").trim();
 }
 
-function generateQrLoginDevice() {
-  const suffix = crypto.randomBytes(3).toString("hex").toUpperCase().match(/.{1,2}/g).join(":");
-  return `F8:24:41:${suffix}`;
+function generateQrLoginClientDeviceId() {
+  return `cli_${crypto.randomBytes(6).toString("base64url")}`;
 }
 
-function buildQrPayload(qrCodeId, device, options = {}) {
-  const projectId = options.projectId || options.houseId || "";
-  const normalizedDevice = normalizeDeviceMac(device);
-  const withProjectId = projectId ? `&${projectId}` : "";
-  return `dali&${normalizedDevice}&${qrCodeId}${withProjectId}`;
+function buildQrPayload(qrCodeId, clientDeviceId) {
+  return `cli&${normalizeClientDeviceId(clientDeviceId)}&${qrCodeId}`;
 }
 
 function extractQrInfo(response) {
@@ -60,7 +45,7 @@ function extractHouseId(qrInfo) {
   if (!source) {
     return "";
   }
-  const normalized = source.startsWith("dali:") ? source.slice("dali:".length) : source;
+  const normalized = source.replace(/^(dali|cli):/, "");
   try {
     const parsed = JSON.parse(normalized);
     return parsed && parsed.houseId !== undefined && parsed.houseId !== null ? String(parsed.houseId) : "";
@@ -79,7 +64,6 @@ function isExpiredStatus(status) {
 
 module.exports = {
   DEFAULT_QR_LOGIN_BASE_URL,
-  DEFAULT_QR_LOGIN_DEVICE,
   DEFAULT_QR_LOGIN_POLL_INTERVAL_MS,
   DEFAULT_QR_LOGIN_TIMEOUT_MS,
   buildQrPayload,
@@ -87,9 +71,9 @@ module.exports = {
   extractHouseId,
   extractQrInfo,
   extractToken,
-  generateQrLoginDevice,
+  generateQrLoginClientDeviceId,
   isExpiredStatus,
   isLoginStatus,
-  normalizeDeviceMac,
+  normalizeClientDeviceId,
   normalizeQrLoginBaseUrl,
 };

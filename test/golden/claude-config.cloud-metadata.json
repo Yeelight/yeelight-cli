@@ -10,12 +10,15 @@
         "--header",
         "Client-Id:${YEELIGHT_CLIENT_ID}",
         "--header",
-        "House-Id:${YEELIGHT_HOUSE_ID}"
+        "House-Id:${YEELIGHT_HOUSE_ID}",
+        "--header",
+        "bizType:${YEELIGHT_BIZ_TYPE}"
       ],
       "env": {
         "YEELIGHT_AUTHORIZATION": "${YEELIGHT_AUTHORIZATION}",
         "YEELIGHT_CLIENT_ID": "${YEELIGHT_CLIENT_ID}",
-        "YEELIGHT_HOUSE_ID": "${YEELIGHT_HOUSE_ID}"
+        "YEELIGHT_HOUSE_ID": "${YEELIGHT_HOUSE_ID}",
+        "YEELIGHT_BIZ_TYPE": "${YEELIGHT_BIZ_TYPE}"
       }
     },
     "yeelight-metadata": {
@@ -28,12 +31,15 @@
         "--header",
         "Client-Id:${YEELIGHT_CLIENT_ID}",
         "--header",
-        "House-Id:${YEELIGHT_HOUSE_ID}"
+        "House-Id:${YEELIGHT_HOUSE_ID}",
+        "--header",
+        "bizType:${YEELIGHT_BIZ_TYPE}"
       ],
       "env": {
         "YEELIGHT_AUTHORIZATION": "${YEELIGHT_AUTHORIZATION}",
         "YEELIGHT_CLIENT_ID": "${YEELIGHT_CLIENT_ID}",
-        "YEELIGHT_HOUSE_ID": "${YEELIGHT_HOUSE_ID}"
+        "YEELIGHT_HOUSE_ID": "${YEELIGHT_HOUSE_ID}",
+        "YEELIGHT_BIZ_TYPE": "${YEELIGHT_BIZ_TYPE}"
       }
     }
   }

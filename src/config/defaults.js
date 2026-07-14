@@ -1,5 +1,7 @@
 "use strict";
 
+const { DEFAULT_BIZ_TYPE } = require("./bizType");
+
 const MCP_IDS = ["cloud", "metadata", "lan"];
 
 const DEFAULT_ENDPOINTS = {
@@ -19,11 +21,15 @@ function createDefaultConfig(options = {}) {
   return {
     version: "1",
     auth: {
+      qrLogin: {
+        clientDeviceId: "",
+      },
       profiles: {
         default: {
           authorization: "",
           clientId: "",
           houseId: "",
+          bizType: DEFAULT_BIZ_TYPE,
         },
       },
     },

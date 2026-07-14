@@ -114,6 +114,7 @@ async function ensureLoginContext(io, prompt) {
     io.stdout.write(`Authorization：${redacted.authorization}\n`);
     io.stdout.write(`Client-Id：${redacted.clientId || "-"}\n`);
     io.stdout.write(`House-Id：${redacted.houseId}\n`);
+    io.stdout.write(`家庭类型：${redacted.bizType === "0" ? "普通家庭" : "商照项目"}（bizType=${redacted.bizType}）\n`);
     const reuse = await confirm(prompt, "是否复用当前登录上下文？[Y/n] ", true);
     if (reuse) {
       return;
@@ -196,6 +197,7 @@ function renderMainMenu(io) {
   io.stdout.write("\nYeelight AI CLI 工作台\n");
   io.stdout.write("状态\n");
   io.stdout.write(`当前家庭：${summary.houseId || "未绑定"}\n`);
+  io.stdout.write(`家庭类型：${summary.bizTypeLabel}（bizType=${summary.bizType}）\n`);
   io.stdout.write(`Cloud MCP：${summary.mcp.cloud.summary}\n`);
   io.stdout.write(`Metadata MCP：${summary.mcp.metadata.summary}\n`);
   io.stdout.write(`推荐下一步：${formatMainMenuNextStep(summary)}\n`);

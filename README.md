@@ -56,9 +56,16 @@ Start the interactive workspace:
 yeelight-ai
 ```
 
-The CLI checks the local profile, guides you through login when required,
-selects a home, and opens the command workspace. Password input is interactive
-by default so it does not need to appear in shell history.
+The CLI checks the local profile, reuses cached credentials when approved,
+guides you through QR login when required, asks whether to use a consumer home
+(`bizType=0`) or commercial-lighting project (`bizType=1`), selects a home,
+and opens the command workspace. Use the Yeelight app to scan and approve the
+terminal QR code; manual token entry remains available for recovery and
+non-interactive environments.
+
+The workspace shows the selected home, Cloud and Metadata endpoints, and a
+recommended next action. Its menus accept both numbers and semantic aliases
+such as `devices`, `doctor`, `tools`, `switch`, and `back`.
 
 For scripts and CI, use explicit commands and JSON output:
 
@@ -90,6 +97,41 @@ yeelight-ai scene run <sceneId>
 yeelight-ai scene run <sceneId> --yes
 ```
 
+If Cloud MCP initialization returns HTTP 421, read-only shortcuts
+automatically fall back to the Yeelight OpenAPI and identify the data source.
+Cloud and Metadata MCP can be switched between local, remote, or explicit
+endpoints:
+
+```bash
+yeelight-ai mcp configure cloud --local
+yeelight-ai mcp configure cloud --remote
+yeelight-ai mcp configure cloud --endpoint http://127.0.0.1:9000/mcp
+yeelight-ai mcp configure metadata --local
+yeelight-ai mcp configure metadata --remote
+```
+
+## Login And Home Selection
+
+Running `yeelight-ai` is normally enough. To explicitly log in, switch home,
+select a business type, or support app integration, use:
+
+```bash
+yeelight-ai login
+yeelight-ai login --method qr --biz-type 0
+yeelight-ai login --method qr --client-device-id cli-debug-1 --no-wait --json
+yeelight-ai login --authorization <token> --client-id <clientId> --house-id <houseId>
+yeelight-ai login --authorization <token> --client-id <clientId> --biz-type 1
+yeelight-ai login --manual
+```
+
+The QR payload has the form `cli&clientDeviceId&qrCodeId`. When no device ID
+is supplied, the CLI generates and persists a `cli_...` identifier for later
+logins; an explicit value applies only to that invocation. Cloud and Metadata
+requests automatically receive the saved `Authorization`, `Client-Id`,
+`House-Id`, and `bizType` headers.
+
+## MCP Tool Invocation
+
 Discover and invoke MCP tools:
 
 ```bash
@@ -113,6 +155,13 @@ yeelight-ai mcp call metadata yeelight_metadata.list_tasks --args '{}' --json
 Metadata tool definitions are available locally for fast discovery. Use
 `--remote` when you explicitly need to compare them with the live service.
 LAN tool names and schemas always come from the gateway at runtime.
+
+Tool listings support MCP cursor pagination through `--cursor`, `--limit`,
+and `--all`. JSON listings are compact by default; add `--raw` for complete
+schemas. Tool calls similarly support `--data-only` for full business data
+without the MCP envelope and `--raw` for protocol diagnostics. Interactive
+tool sessions stay on the selected MCP so multiple calls can be made; use
+`switch` to change services and `back` or `0` to return.
 
 ## Credentials And Safety
 
@@ -153,9 +202,9 @@ npm run smoke
 npm pack --dry-run --json
 ```
 
-The package contains only the public runtime, bilingual documentation, and the
-license. Internal release and preview-only authentication implementations are
-not part of this repository boundary or npm tarball.
+The package contains only the public runtime, QR login implementation,
+bilingual documentation, guides, and license. Internal release and security
+tooling remain outside the npm tarball.
 
 ## License
 

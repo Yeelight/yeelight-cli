@@ -401,6 +401,7 @@ async function requestOpenApi(context, path) {
       headers: {
         authorization: headers.Authorization,
         clientId: headers["Client-Id"],
+        bizType: headers.bizType,
       },
       signal: controller.signal,
     });

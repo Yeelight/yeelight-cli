@@ -77,6 +77,7 @@ test("cloud source gate 能识别当前整改状态", () => {
 
   assert.equal(gate.ok, true);
   assert.equal(gate.bearerNormalization, true);
+  assert.equal(gate.runtimeBindHost, true);
 });
 
 test("mcp call 使用本地登录 Header 调用工具", async (t) => {

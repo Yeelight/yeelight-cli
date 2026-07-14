@@ -11,8 +11,18 @@ const QR_L_TABLE = [
 
 function renderQrTerminal(text, options = {}) {
   const matrix = encodeQr(text);
-  const margin = Number(options.margin === undefined ? 2 : options.margin);
+  const margin = Number(options.margin === undefined ? 1 : options.margin);
   const useAnsi = options.ansi === undefined ? true : Boolean(options.ansi);
+  const compact = options.compact === undefined ? true : Boolean(options.compact);
+  if (compact) {
+    return renderCompactQr(matrix, { margin, useAnsi });
+  }
+  return renderFullQr(matrix, { margin, useAnsi, dark: options.dark, light: options.light });
+}
+
+function renderFullQr(matrix, options) {
+  const margin = options.margin;
+  const useAnsi = options.useAnsi;
   const dark = options.dark || (useAnsi ? "\x1b[40m  \x1b[0m" : "██");
   const light = options.light || (useAnsi ? "\x1b[47m  \x1b[0m" : "  ");
   const size = matrix.length + margin * 2;
@@ -27,6 +37,46 @@ function renderQrTerminal(text, options = {}) {
     lines.push(line);
   }
   return lines.join("\n");
+}
+
+function renderCompactQr(matrix, options) {
+  const margin = options.margin;
+  const useAnsi = options.useAnsi;
+  const size = matrix.length + margin * 2;
+  const lines = [];
+  for (let y = 0; y < size; y += 2) {
+    let line = "";
+    for (let x = 0; x < size; x += 1) {
+      const upper = getPaddedModule(matrix, x, y, margin);
+      const lower = y + 1 < size ? getPaddedModule(matrix, x, y + 1, margin) : false;
+      line += renderHalfBlock(upper, lower, useAnsi);
+    }
+    lines.push(line);
+  }
+  return lines.join("\n");
+}
+
+function getPaddedModule(matrix, x, y, margin) {
+  const inMatrix = y >= margin && y < matrix.length + margin && x >= margin && x < matrix.length + margin;
+  return inMatrix ? matrix[y - margin][x - margin] : false;
+}
+
+function renderHalfBlock(upper, lower, useAnsi) {
+  if (!useAnsi) {
+    if (upper && lower) {
+      return "█";
+    }
+    if (upper) {
+      return "▀";
+    }
+    if (lower) {
+      return "▄";
+    }
+    return " ";
+  }
+  const foreground = upper ? "\x1b[30m" : "\x1b[37m";
+  const background = lower ? "\x1b[40m" : "\x1b[47m";
+  return `${foreground}${background}▀\x1b[0m`;
 }
 
 function encodeQr(text) {

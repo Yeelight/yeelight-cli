@@ -1,11 +1,13 @@
 "use strict";
 
+const { DEFAULT_BIZ_TYPE, normalizeBizType } = require("../config/bizType");
 const { CliError } = require("../errors");
-const { DEFAULT_PASSWORD_LOGIN_BASE_URL, normalizePasswordLoginBaseUrl } = require("./passwordProtocol");
+
+const DEFAULT_API_BASE_URL = "https://api.yeelight.com";
 
 class HouseClient {
   constructor(options = {}) {
-    this.baseUrl = normalizePasswordLoginBaseUrl(options.baseUrl || DEFAULT_PASSWORD_LOGIN_BASE_URL);
+    this.baseUrl = normalizeApiBaseUrl(options.baseUrl || DEFAULT_API_BASE_URL);
     this.fetch = options.fetch || global.fetch;
     this.timeoutMs = Number(options.timeoutMs || 15000);
     if (typeof this.fetch !== "function") {
@@ -62,7 +64,7 @@ class HouseClient {
       const headers = {
         "Accept-Language": "zh-CN",
         Authorization: credentials.authorization,
-        bizType: "1",
+        bizType: normalizeBizType(credentials.bizType, DEFAULT_BIZ_TYPE),
       };
       if (credentials.clientId) {
         headers["Client-Id"] = credentials.clientId;
@@ -153,6 +155,11 @@ function formatNetworkError(error) {
     return "请求超时";
   }
   return error && error.message ? error.message : String(error);
+}
+
+function normalizeApiBaseUrl(value) {
+  const text = String(value || DEFAULT_API_BASE_URL).trim().replace(/\/+$/, "");
+  return text || DEFAULT_API_BASE_URL;
 }
 
 module.exports = {

@@ -27,6 +27,7 @@ test("CLI 冒烟流程可生成配置、登录、列出 MCP、生成 Cursor JSON
   const login = run(["login", "--authorization", "Bearer token-123456", "--client-id", "client-123456", "--house-id", "house-123456", "--json"], env);
   assert.equal(login.status, 0);
   assert.equal(JSON.parse(login.stdout).credentials.authorization.includes("token-123456"), false);
+  assert.equal(JSON.parse(login.stdout).credentials.bizType, "1");
 
   const list = run(["mcp", "list", "--json"], env);
   assert.equal(list.status, 0);
@@ -76,6 +77,7 @@ test("status 和 quick 展示工作台摘要并支持 JSON", () => {
   assert.equal(status.status, 0);
   assert.equal(status.stdout.includes("Yeelight AI CLI 工作台"), true);
   assert.equal(status.stdout.includes("当前家庭：house-status-123456"), true);
+  assert.equal(status.stdout.includes("家庭类型：商照项目（bizType=1）"), true);
   assert.equal(status.stdout.includes("Cloud MCP：远端"), true);
   assert.equal(status.stdout.includes("推荐下一步"), true);
   assert.equal(status.stdout.includes("常用动作"), true);
@@ -88,6 +90,7 @@ test("status 和 quick 展示工作台摘要并支持 JSON", () => {
   assert.equal(output.ok, true);
   assert.equal(output.loggedIn, true);
   assert.equal(output.houseId, "house-status-123456");
+  assert.equal(output.bizType, "1");
   assert.equal(output.mcp.cloud.summary.includes("远端"), true);
   assert.equal(output.nextSteps.includes("查看设备：yeelight-ai device list"), true);
   assert.equal(output.quickActions.some((item) => item.key === "devices"), true);

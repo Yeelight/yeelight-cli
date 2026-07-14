@@ -5,7 +5,8 @@
       "headers": {
         "Authorization": "${YEELIGHT_AUTHORIZATION}",
         "Client-Id": "${YEELIGHT_CLIENT_ID}",
-        "House-Id": "${YEELIGHT_HOUSE_ID}"
+        "House-Id": "${YEELIGHT_HOUSE_ID}",
+        "bizType": "${YEELIGHT_BIZ_TYPE}"
       }
     },
     "yeelight-metadata": {
@@ -13,7 +14,8 @@
       "headers": {
         "Authorization": "${YEELIGHT_AUTHORIZATION}",
         "Client-Id": "${YEELIGHT_CLIENT_ID}",
-        "House-Id": "${YEELIGHT_HOUSE_ID}"
+        "House-Id": "${YEELIGHT_HOUSE_ID}",
+        "bizType": "${YEELIGHT_BIZ_TYPE}"
       }
     }
   }

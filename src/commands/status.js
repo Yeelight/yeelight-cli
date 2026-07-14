@@ -19,6 +19,7 @@ function runStatusCommand(argv, io) {
   io.stdout.write("Yeelight AI CLI 工作台\n");
   io.stdout.write(`配置文件：${summary.configPath}\n`);
   io.stdout.write(`当前家庭：${summary.houseId || "未绑定"}\n`);
+  io.stdout.write(`家庭类型：${summary.bizTypeLabel}（bizType=${summary.bizType}）\n`);
   io.stdout.write(`Cloud MCP：${summary.mcp.cloud.summary}\n`);
   io.stdout.write(`Metadata MCP：${summary.mcp.metadata.summary}\n`);
   io.stdout.write(`LAN MCP：${summary.mcp.lan.summary}\n`);

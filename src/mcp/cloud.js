@@ -43,9 +43,9 @@ function getCloudAdapter() {
           dryRun: gate.dryRun ? "pass" : "fail",
           confirmSideEffect: gate.confirmSideEffect ? "pass" : "fail",
           bearerNormalization: gate.bearerNormalization ? "pass" : "fail",
-          defaultLocalhost: gate.defaultLocalhost ? "pass" : "fail",
+          runtimeBindHost: gate.runtimeBindHost ? "pass" : "fail",
           source: gate.source,
-          reason: gate.ok ? "控制 MCP 已声明 dry-run、confirmSideEffect、Bearer 归一化和本地绑定契约。" : "控制 MCP 仍存在未通过的内部检查。",
+          reason: gate.ok ? "控制 MCP 已声明 dry-run、confirmSideEffect、Bearer 归一化和运行时绑定契约。" : "控制 MCP 仍存在未通过的内部检查。",
         },
       };
     },
@@ -84,7 +84,7 @@ function inspectCloudSourceGate(repoRoot = path.resolve(__dirname, "..", "..", "
       dryRun: true,
       confirmSideEffect: true,
       bearerNormalization: true,
-      defaultLocalhost: true,
+      runtimeBindHost: true,
       ok: true,
       source: "public-contract",
     };
@@ -99,13 +99,18 @@ function inspectCloudSourceGate(repoRoot = path.resolve(__dirname, "..", "..", "
   const dryRun = model.includes("dryRun") && safety.includes("DRY_RUN") && service.includes("build_control_plan");
   const confirmSideEffect = model.includes("confirmSideEffect") && safety.includes("CONFIRM_SIDE_EFFECT_REQUIRED");
   const bearerNormalization = auth.includes("normalize_authorization_header") && service.includes("normalize_authorization_header") && middleware.includes("normalize_authorization_header");
-  const defaultLocalhost = config.includes('BIND_HOST = "127.0.0.1"') && main.includes("settings.BIND_HOST");
+  const runtimeBindHost = config.includes("def default_bind_host()") &&
+    config.includes('"0.0.0.0"') &&
+    config.includes('"127.0.0.1"') &&
+    config.includes("IOT_MCP_BIND_HOST") &&
+    main.includes('"host": settings.BIND_HOST') &&
+    main.includes('"port": settings.PORT');
   return {
     dryRun,
     confirmSideEffect,
     bearerNormalization,
-    defaultLocalhost,
-    ok: dryRun && confirmSideEffect && bearerNormalization && defaultLocalhost,
+    runtimeBindHost,
+    ok: dryRun && confirmSideEffect && bearerNormalization && runtimeBindHost,
     source: "source-scan",
   };
 }

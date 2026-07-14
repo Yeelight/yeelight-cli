@@ -1,5 +1,6 @@
 "use strict";
 
+const { DEFAULT_BIZ_TYPE, formatBizType, normalizeBizType } = require("../config/bizType");
 const { DEFAULT_ENDPOINTS } = require("../config/defaults");
 
 function buildWorkspaceSummary(loadResult) {
@@ -14,6 +15,8 @@ function buildWorkspaceSummary(loadResult) {
     configPath: loadResult.path,
     loggedIn: Boolean(profile.authorization && profile.houseId),
     houseId: profile.houseId || "",
+    bizType: normalizeBizType(profile.bizType, DEFAULT_BIZ_TYPE),
+    bizTypeLabel: formatBizType(profile.bizType),
     mcp,
     nextSteps: buildNextSteps(profile, mcp),
     quickActions: buildQuickActions(),

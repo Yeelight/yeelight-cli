@@ -1,5 +1,6 @@
 "use strict";
 
+const { DEFAULT_BIZ_TYPE, normalizeBizType } = require("../config/bizType");
 const { CliError } = require("../errors");
 const {
   DEFAULT_QR_LOGIN_BASE_URL,
@@ -12,6 +13,7 @@ class QrLoginClient {
     this.baseUrl = normalizeQrLoginBaseUrl(options.baseUrl || DEFAULT_QR_LOGIN_BASE_URL);
     this.fetch = options.fetch || global.fetch;
     this.timeoutMs = Number(options.timeoutMs || 15000);
+    this.bizType = normalizeBizType(options.bizType, DEFAULT_BIZ_TYPE);
     if (typeof this.fetch !== "function") {
       throw new CliError("当前 Node.js 不支持 fetch，无法执行扫码登录。");
     }
@@ -35,7 +37,7 @@ class QrLoginClient {
         method: "POST",
         headers: {
           "Accept-Language": "zh-CN",
-          bizType: "1",
+          bizType: this.bizType,
         },
         signal: controller.signal,
       });

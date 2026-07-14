@@ -1,6 +1,6 @@
 {
   "name": "yeelight-ai",
-  "version": "0.0.4",
+  "version": "0.0.8",
   "description": "Unified CLI for Yeelight Cloud, Metadata, and LAN MCP services",
   "type": "commonjs",
   "bin": {
@@ -9,11 +9,7 @@
   "files": [
     "bin",
     "src",
-    "!src/auth/qrClient.js",
-    "!src/auth/qrLogin.js",
-    "!src/auth/qrProtocol.js",
     "!src/commands/release.js",
-    "!src/output/qrcode.js",
     "!src/security/releaseGate.js",
     "README.md",
     "README.zh-CN.md",

@@ -2,6 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { DEFAULT_BIZ_TYPE, normalizeBizType } = require("../config/bizType");
 const { listAdapters } = require("../mcp/registry");
 
 function listEnabledMcpServers(config) {
@@ -37,6 +38,7 @@ function buildEnvHeaders() {
     Authorization: "${YEELIGHT_AUTHORIZATION}",
     "Client-Id": "${YEELIGHT_CLIENT_ID}",
     "House-Id": "${YEELIGHT_HOUSE_ID}",
+    bizType: "${YEELIGHT_BIZ_TYPE}",
   };
 }
 
@@ -46,6 +48,7 @@ function buildConcreteHeaders(config, profileName) {
     Authorization: profile.authorization || "",
     "Client-Id": profile.clientId || "",
     "House-Id": profile.houseId || "",
+    bizType: normalizeBizType(profile.bizType, DEFAULT_BIZ_TYPE),
   };
 }
 
