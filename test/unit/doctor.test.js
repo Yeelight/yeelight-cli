@@ -21,6 +21,7 @@ test("带 token 的配置通过 Bearer 归一化检查", async () => {
   const result = await runDoctor({ exists: true, path: "/tmp/config.json", config }, { mcp: "metadata" });
 
   assert.equal(result.checks.some((item) => item.id === "AUTH_BEARER_NORMALIZED" && item.status === "pass"), true);
+  assert.equal(result.checks.some((item) => item.id === "CLOUD_REGION" && item.status === "pass" && item.message.includes("cn")), true);
 });
 
 test("LAN 单项诊断不要求云端 Authorization", async () => {

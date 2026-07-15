@@ -71,9 +71,10 @@ CLI 会自动完成以下准备工作：
 1. 检查本地是否已有登录上下文。
 2. 如果已有缓存，询问是否复用。
 3. 如果缺少凭证，进入登录流程。
-4. 登录成功后拉取家庭列表，并引导选择一个家庭。
-5. 保存 MCP 调用所需的 `Authorization`、`Client-Id`、`House-Id`。
-6. 进入工作台。
+4. 选择账号 Region；默认使用 `cn`，也支持 `sg`、`us`、`eu`。
+5. 登录成功后只从所选业务域拉取家庭列表，并引导选择一个家庭。
+6. 保存 MCP 调用所需的 `Authorization`、`Yeelight-Region` 和 `House-Id`。
+7. 进入工作台。
 
 工作台会先展示当前家庭、Cloud MCP、Metadata MCP 和推荐下一步，然后把入口分成常用和高级两组：
 
@@ -204,13 +205,13 @@ yeelight-ai mcp configure metadata --remote
 
 当前可用登录方式：
 
-- 扫码登录：推荐方式，CLI 生成 `cli&clientDeviceId&qrCodeId` 二维码，使用 Yeelight / 易来 APP 扫码确认后保存凭证。
+- 扫码登录：推荐方式。CLI 生成二维码后，在 Yeelight Pro APP 首页点击右上角 `+`，选择 **MCP 授权**，扫描终端二维码并确认。
 - 手动 token：适合已有 token 或排障场景。
 
 交互式运行 `yeelight-ai login` 时会先展示“扫码登录”和“手动粘贴 token”两个入口，直接回车默认使用扫码登录。拉取家庭列表前还会选择家庭类型：
 
-- `bizType=0`：普通家庭。
-- `bizType=1`：商照项目。
+- `bizType=0`：普通 Pro 家庭，也是默认值；列表为空时不会回退商照项目。
+- `bizType=1`：商照项目，只有本次显式选择时才查询。
 
 需要重新登录或切换家庭时，优先在工作台选择 `6. 重新登录/切换家庭`。
 
@@ -218,8 +219,8 @@ yeelight-ai mcp configure metadata --remote
 
 ```bash
 yeelight-ai login
-yeelight-ai login --method qr
-yeelight-ai login --method qr --biz-type 0
+yeelight-ai login --method qr --region cn
+yeelight-ai login --method qr --region eu --biz-type 0
 ```
 
 和 APP 联调时，可以固定 CLI 设备标识并只生成二维码，不等待确认：
@@ -233,9 +234,12 @@ yeelight-ai login --method qr --client-device-id cli-debug-1 --no-wait --json
 已有 token 时可手动保存：
 
 ```bash
-yeelight-ai login --authorization <token> --client-id <clientId> --house-id <houseId>
-yeelight-ai login --authorization <token> --client-id <clientId> --biz-type 1
+yeelight-ai login --authorization <token> --region cn --house-id <houseId>
+yeelight-ai login --authorization <token> --region cn --biz-type 1
 ```
+
+Region 优先级为 `--region` -> `YEELIGHT_CLOUD_REGION` -> 当前 profile -> `cn`。
+用户不需要配置 Client ID；可信 Yeelight 上游会从 Authorization 上下文中解析。
 
 也可以进入交互式手动录入：
 
@@ -525,7 +529,7 @@ npm pack --dry-run
 - `config get` 默认脱敏，不输出完整 token。
 - `doctor --json` 不包含完整凭证。
 - 登录流程支持裸 token 和 `Bearer xxx`，保存时统一为单个 `Bearer xxx`。
-- cloud 和 metadata 调用会自动使用登录后保存的 `Authorization`、`Client-Id`、`House-Id` 和 `bizType`。
+- cloud 和 metadata 调用会自动使用登录后保存的 `Authorization`、`Yeelight-Region`、可选 `House-Id` 和 `bizType`。
 - lan 调用只访问本地网关 MCP，不携带云端认证 Header。
 
 ## 常见问题
@@ -542,7 +546,7 @@ yeelight-ai mcp list --json
 
 ### 登录成功后没有家庭可选
 
-CLI 会优先读取 APP 家庭列表；如果列表为空，会回退到 DALI 项目列表。仍然没有家庭时，请先在 APP 或管理后台确认账号已加入家庭或项目，再重新执行：
+默认普通家庭模式只读取 Yeelight Pro 家庭，不会跨业务域回退到商照项目。请先确认账号 Region 正确，并在 Yeelight Pro APP 中确认账号已加入家庭；商照账号需在登录时显式选择 `bizType=1`。
 
 ```bash
 yeelight-ai
@@ -551,12 +555,12 @@ yeelight-ai
 如果你已经知道家庭 ID，并且已有可用 token，也可以用手动写入方式恢复配置：
 
 ```bash
-yeelight-ai login --authorization <token> --client-id <clientId> --house-id <houseId>
+yeelight-ai login --authorization <token> --region cn --house-id <houseId>
 ```
 
 ### Cloud 或 Metadata 调用提示需要先登录
 
-cloud 和 metadata 会自动读取本地保存的 `Authorization`、`Client-Id`、`House-Id`。如果缺失或切换了账号，重新运行：
+cloud 和 metadata 会自动读取本地保存的 `Authorization`、`Yeelight-Region` 和可选 `House-Id`。如果缺失或切换了账号，重新运行：
 
 ```bash
 yeelight-ai

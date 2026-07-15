@@ -65,13 +65,13 @@ test("login --method manual 不接收账密参数", async () => {
   );
 });
 
-test("login 默认扫码时 --client-id 需要走手动 token", async () => {
+test("login 拒绝已移除的 --client-id", async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "yeelight-cli-client-id-needs-manual-"));
   const output = captureIo({ YEELIGHT_AI_CONFIG_DIR: dir });
 
   await assert.rejects(
     () => runLoginCommand(["--client-id", "client-123456", "--json"], output.io),
-    /扫码登录不能和 --client-id 同时使用/
+    /Client ID 已从公开认证契约中移除/
   );
 });
 

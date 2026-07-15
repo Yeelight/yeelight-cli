@@ -14,7 +14,9 @@ test("默认配置启用 cloud 和 metadata，lan 等待 gateway IP", () => {
   assert.equal(config.mcp.lan.enabled, false);
   assert.equal(config.mcp.lan.status, "requires_gateway_ip");
   assert.equal(config.auth.qrLogin.clientDeviceId, "");
-  assert.equal(config.auth.profiles.default.bizType, "1");
+  assert.equal(config.auth.profiles.default.region, "cn");
+  assert.equal(Object.hasOwn(config.auth.profiles.default, "clientId"), false);
+  assert.equal(config.auth.profiles.default.bizType, "0");
   assert.equal(config.security.defaultDryRun, true);
   assert.equal(config.security.bindHost, "127.0.0.1");
 });
@@ -22,14 +24,13 @@ test("默认配置启用 cloud 和 metadata，lan 等待 gateway IP", () => {
 test("配置脱敏不会泄露完整凭证", () => {
   const config = createDefaultConfig();
   config.auth.profiles.default.authorization = "Bearer abcdefghijklmnopqrstuvwxyz";
-  config.auth.profiles.default.clientId = "client-1234567890";
   config.auth.profiles.default.houseId = "house-1234567890";
   config.auth.profiles.default.bizType = "0";
 
   const redacted = redactConfig(config);
 
   assert.equal(redacted.auth.profiles.default.authorization, "Bear...wxyz");
-  assert.equal(redacted.auth.profiles.default.clientId, "clie...7890");
+  assert.equal(Object.hasOwn(redacted.auth.profiles.default, "clientId"), false);
   assert.equal(redacted.auth.profiles.default.houseId, "****");
   assert.equal(redacted.auth.profiles.default.bizType, "0");
 });
@@ -44,4 +45,24 @@ test("旧 metadata endpoint 会迁移到正式 endpoint", () => {
   });
 
   assert.equal(config.mcp.metadata.endpoint, "https://api.yeelight.com/apis/metadata_mcp_server/v1/mcp");
+});
+
+test("旧 profile 迁移时删除 clientId 并按 Region 更新官方 endpoint", () => {
+  const config = migrateConfig({
+    auth: {
+      profiles: {
+        default: {
+          authorization: "Bearer token",
+          clientId: "legacy-client",
+          houseId: "1001",
+          region: "sg",
+        },
+      },
+    },
+  });
+
+  assert.equal(config.auth.profiles.default.region, "sg");
+  assert.equal(Object.hasOwn(config.auth.profiles.default, "clientId"), false);
+  assert.equal(config.mcp.cloud.endpoint, "https://api-sg.yeelight.com/apis/mcp_server/v1/mcp");
+  assert.equal(config.mcp.metadata.endpoint, "https://api-sg.yeelight.com/apis/metadata_mcp_server/v1/mcp");
 });

@@ -22,6 +22,8 @@ CLI 是 MCP 客户端和工作流辅助工具，不会把 MCP 替换成另一套
 yeelight-ai login
 ```
 
+按提示选择账号 Region，然后在 Yeelight Pro APP 首页点击右上角 `+`，选择 **MCP 授权**，扫描终端二维码。
+
 账密登录时通过提示输入密码：
 
 ```bash
@@ -31,10 +33,10 @@ yeelight-ai login --method password --account <手机号或邮箱>
 已有 token 时使用手动方式：
 
 ```bash
-yeelight-ai login --authorization <token> --client-id <clientId> --house-id <houseId>
+yeelight-ai login --authorization <token> --region cn --house-id <houseId>
 ```
 
-Cloud 和 Metadata 调用会自动读取当前本地 profile 的 `Authorization`、`Client-Id` 和 `House-Id`。LAN 调用不会携带这些云端 Header。
+Cloud 和 Metadata 调用会自动读取当前 profile 的 `Authorization`、`Yeelight-Region` 和可选 `House-Id`。Region 优先级是 `--region` -> `YEELIGHT_CLOUD_REGION` -> profile -> `cn`。LAN 调用不会携带云端 Header，用户无需配置 Client ID。
 
 ## 调用前先发现
 
@@ -76,6 +78,7 @@ yeelight-ai mcp call cloud get_devices --args '{}' --json
 当前任务化工具面包括：
 
 - `yeelight_metadata.list_groups`
+- `yeelight_metadata.list_houses`
 - `yeelight_metadata.list_tasks`
 - `yeelight_metadata.list_actions`
 - `yeelight_metadata.get_action_schema`

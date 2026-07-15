@@ -1,6 +1,7 @@
 "use strict";
 
 const { DEFAULT_BIZ_TYPE } = require("./bizType");
+const { DEFAULT_REGION } = require("./region");
 
 const MCP_IDS = ["cloud", "metadata", "lan"];
 
@@ -27,9 +28,9 @@ function createDefaultConfig(options = {}) {
       profiles: {
         default: {
           authorization: "",
-          clientId: "",
           houseId: "",
           bizType: DEFAULT_BIZ_TYPE,
+          region: DEFAULT_REGION,
         },
       },
     },

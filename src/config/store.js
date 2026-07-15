@@ -4,6 +4,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { DEFAULT_ENDPOINTS, LEGACY_ENDPOINTS, createDefaultConfig } = require("./defaults");
+const { DEFAULT_REGION, applyRegionEndpoints, normalizeRegion } = require("./region");
 const { CliError } = require("../errors");
 
 function getConfigDir(env = process.env) {
@@ -54,7 +55,14 @@ function saveConfig(config, options = {}) {
 }
 
 function migrateConfig(config) {
-  return migrateLegacyEndpoints(deepMerge(createDefaultConfig(), config || {}));
+  const migrated = migrateLegacyEndpoints(deepMerge(createDefaultConfig(), config || {}));
+  const profiles = migrated.auth && migrated.auth.profiles ? migrated.auth.profiles : {};
+  for (const profile of Object.values(profiles)) {
+    delete profile.clientId;
+    profile.region = normalizeRegion(profile.region || DEFAULT_REGION);
+  }
+  const defaultProfile = profiles.default || {};
+  return applyRegionEndpoints(migrated, defaultProfile.region || DEFAULT_REGION);
 }
 
 function migrateLegacyEndpoints(config) {

@@ -11,11 +11,11 @@ function printHelp(io) {
   ];
   const auth = [
     "  yeelight-ai login",
-    "  yeelight-ai login --method qr [--client-device-id <id>] [--house-id <id>] [--biz-type 0|1]",
+    "  yeelight-ai login --method qr [--region cn|sg|us|eu] [--client-device-id <id>] [--house-id <id>] [--biz-type 0|1]",
   ];
   auth.push(
     "  yeelight-ai login --manual",
-    "  yeelight-ai login --authorization <token> [--client-id <id>] [--house-id <id>] [--biz-type 0|1]",
+    "  yeelight-ai login --authorization <token> [--region cn|sg|us|eu] [--house-id <id>] [--biz-type 0|1]",
   );
   const resources = [
     "  yeelight-ai house show [--json|--format json]",
@@ -63,7 +63,7 @@ ${advanced.join("\n")}
 
 说明：
   直接运行 yeelight-ai 会检查登录上下文、按需登录并绑定家庭，然后进入工作台。
-  家庭类型支持 bizType=0 普通家庭、bizType=1 商照项目；交互登录会在拉取家庭前询问。
+  默认使用普通 Pro 家庭（bizType=0）；只有显式选择 bizType=1 时才查询商照项目。
   日常查看和控制优先使用 house、room、device、scene、light 业务快捷命令；mcp 子命令用于高级排障和原始工具调用。
 `);
 }

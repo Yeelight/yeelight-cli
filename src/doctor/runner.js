@@ -49,6 +49,15 @@ function runGlobalChecks(loadResult) {
       loadResult.exists ? "" : "直接运行 yeelight-ai，CLI 会自动创建默认配置并进入登录引导。"
     ),
   ];
+  checks.push(
+    checkResult(
+      "CLOUD_REGION",
+      "global",
+      profile.region ? "pass" : "fail",
+      profile.region ? `当前云端 Region：${profile.region}。` : "当前 profile 缺少 Region。",
+      profile.region ? "" : "重新登录并选择 Region。"
+    )
+  );
 
   const normalized = normalizeAuthorization(profile.authorization);
   checks.push(

@@ -30,7 +30,8 @@ function resolveMcpRuntime(config, id) {
 }
 
 function assertAuthHeaders(headers, id) {
-  if (!headers.Authorization || !headers["House-Id"]) {
+  const missingHouse = id === "cloud" && !headers["House-Id"];
+  if (!headers.Authorization || missingHouse) {
     throw new CliError(`${id} MCP 需要先登录并绑定家庭，请运行 yeelight-ai。`);
   }
 }

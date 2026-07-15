@@ -211,7 +211,7 @@ test("读类快捷命令遇到 MCP initialize 421 时自动使用 OpenAPI fallba
     }
     if (String(url).includes("/v1/open/node/house/house-resources-123456/rooms/r/list/1/300")) {
       assert.equal(options.headers.authorization, "Bearer token-resources-123456");
-      assert.equal(options.headers.clientId, "client-resources-123456");
+      assert.equal(Object.hasOwn(options.headers, "clientId"), false);
       assert.equal(options.headers.bizType, "1");
       return responseJson({
         code: "200",

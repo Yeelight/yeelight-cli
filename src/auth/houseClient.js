@@ -16,11 +16,11 @@ class HouseClient {
   }
 
   async listHouses(credentials) {
-    const appHouses = await this.tryListAppHouses(credentials);
-    if (appHouses.length > 0) {
-      return appHouses;
+    const bizType = normalizeBizType(credentials.bizType, DEFAULT_BIZ_TYPE);
+    if (bizType === "1") {
+      return this.tryListSaasProjects({ ...credentials, bizType });
     }
-    return this.tryListSaasProjects(credentials);
+    return this.tryListAppHouses({ ...credentials, bizType });
   }
 
   async tryListAppHouses(credentials) {
@@ -66,9 +66,6 @@ class HouseClient {
         Authorization: credentials.authorization,
         bizType: normalizeBizType(credentials.bizType, DEFAULT_BIZ_TYPE),
       };
-      if (credentials.clientId) {
-        headers["Client-Id"] = credentials.clientId;
-      }
       if (data !== undefined) {
         headers["Content-Type"] = "application/json";
       }

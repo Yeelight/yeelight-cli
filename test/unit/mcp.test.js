@@ -37,9 +37,10 @@ test("metadata adapter 提供本地工具参数定义", () => {
   const listTasks = tools.find((tool) => tool.name === "yeelight_metadata.list_tasks");
   const getActionSchema = tools.find((tool) => tool.name === "yeelight_metadata.get_action_schema");
 
-  assert.equal(tools.length, 5);
+  assert.equal(tools.length, 6);
   assert.deepEqual(tools.map((tool) => tool.name), [
     "yeelight_metadata.list_groups",
+    "yeelight_metadata.list_houses",
     "yeelight_metadata.list_tasks",
     "yeelight_metadata.list_actions",
     "yeelight_metadata.get_action_schema",

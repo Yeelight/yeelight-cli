@@ -3,6 +3,7 @@
 const { getBooleanFlag, getStringFlag, hasFlag, parseArgs } = require("../args");
 const { buildConcreteHeaders } = require("../clients/common");
 const { loadConfig } = require("../config/store");
+const { buildRegionEndpoints } = require("../config/region");
 const { assertControlArgumentsAllowed, sanitizeControllablePropertyData, summarizeControllableProperties } = require("../control/properties");
 const { CliError } = require("../errors");
 const { callMcpTool } = require("../mcp/protocol");
@@ -392,15 +393,16 @@ async function requestOpenApi(context, path) {
   }
   const profileName = context.config.mcp.cloud.authProfile || "default";
   const headers = buildConcreteHeaders(context.config, profileName);
+  const profile = context.config.auth.profiles[profileName] || {};
+  const accountBaseUrl = buildRegionEndpoints(profile.region || "cn").account;
   const controller = new AbortController();
   const timeoutMs = context.timeoutMs || 15000;
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(`https://api.yeelight.com${path}`, {
+    const response = await fetch(`${accountBaseUrl}${path}`, {
       method: "GET",
       headers: {
         authorization: headers.Authorization,
-        clientId: headers["Client-Id"],
         bizType: headers.bizType,
       },
       signal: controller.signal,

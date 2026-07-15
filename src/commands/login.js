@@ -3,6 +3,7 @@
 const readline = require("readline");
 const { getBooleanFlag, getStringFlag, hasFlag, parseArgs } = require("../args");
 const { BIZ_TYPE_OPTIONS, DEFAULT_BIZ_TYPE, formatBizTypeWithCode, normalizeBizType } = require("../config/bizType");
+const { applyRegionEndpoints, buildRegionEndpoints, resolveRegion } = require("../config/region");
 const { loadConfig, saveConfig } = require("../config/store");
 const { redactProfile } = require("../config/redact");
 const { CliError } = require("../errors");
@@ -22,11 +23,20 @@ async function runLoginCommand(argv, io) {
   const config = loadResult.config;
 
   const current = ensureProfile(config, profileName);
+  if (hasFlag(flags, "client-id")) {
+    throw new CliError("Client ID 已从公开认证契约中移除；只需 Authorization、Region 和可选 House ID。");
+  }
+  const region = resolveRegion({
+    flag: getStringFlag(flags, "region", ""),
+    env: io.env.YEELIGHT_CLOUD_REGION,
+    profile: current.region,
+  });
+  const baseUrl = getStringFlag(flags, "base-url", io.env.YEELIGHT_QR_LOGIN_BASE_URL || buildRegionEndpoints(region).account);
   const explicitQr = getBooleanFlag(flags, "qr", false);
   const explicitManual = getBooleanFlag(flags, "manual", false);
   const methodFlag = getStringFlag(flags, "method", "");
   if (explicitQr && (explicitManual || methodFlag || hasQrConflictInput(flags))) {
-    throw new CliError("login --qr 不能和 --manual、--method、--authorization、--client-id、--account 或 --password 同时使用。");
+    throw new CliError("login --qr 不能和 --manual、--method、--authorization、--account 或 --password 同时使用。");
   }
   if (explicitManual && methodFlag) {
     throw new CliError("login --manual 不能和 --method 同时使用。");
@@ -39,23 +49,22 @@ async function runLoginCommand(argv, io) {
       profileName,
       config,
       io,
+      region,
+      baseUrl,
     });
   }
   const authorizationInput = getStringFlag(flags, "authorization", "");
-  const clientIdInput = getStringFlag(flags, "client-id", "");
   const houseIdInput = getStringFlag(flags, "house-id", "");
   const explicitBizType = getExplicitBizType(flags);
 
-  const shouldPrompt = explicitManual || (!authorizationInput && !clientIdInput && !houseIdInput);
+  const shouldPrompt = explicitManual || (!authorizationInput && !houseIdInput);
   const promptDefaults = {
     authorization: authorizationInput || current.authorization,
-    clientId: clientIdInput || current.clientId,
     houseId: houseIdInput || current.houseId,
   };
   const answers = shouldPrompt ? await promptForCredentials(io, promptDefaults) : {};
 
   const authorization = normalizeAuthorization(authorizationInput || answers.authorization || current.authorization);
-  const clientId = clientIdInput || answers.clientId || current.clientId;
   const houseId = houseIdInput || answers.houseId || current.houseId;
 
   if (!authorization) {
@@ -73,20 +82,19 @@ async function runLoginCommand(argv, io) {
     asJson,
     credentials: {
       authorization,
-      clientId,
       bizType,
     },
     explicitHouseId: houseId,
-    currentHouseId: current.houseId,
-    baseUrl: getStringFlag(flags, "base-url", io.env.YEELIGHT_QR_LOGIN_BASE_URL || ""),
+    baseUrl,
   });
 
   config.auth.profiles[profileName] = {
     authorization,
-    clientId,
     houseId: selectedHouseId,
     bizType,
+    region,
   };
+  applyRegionEndpoints(config, region);
   const path = saveConfig(config, { env: io.env });
   const result = {
     ok: true,
@@ -100,8 +108,8 @@ async function runLoginCommand(argv, io) {
   } else {
     io.stdout.write(`已保存凭证：${profileName}\n`);
     io.stdout.write(`Authorization：${result.credentials.authorization}\n`);
-    io.stdout.write(`Client-Id：${result.credentials.clientId}\n`);
     io.stdout.write(`House-Id：${result.credentials.houseId}\n`);
+    io.stdout.write(`Region：${region}\n`);
     io.stdout.write(`业务类型：${formatBizTypeWithCode(bizType)}\n`);
   }
   return 0;
@@ -121,7 +129,7 @@ async function resolveLoginMethod(options) {
       throw new CliError(`不支持的登录方式：${options.methodFlag}。可选：${formatLoginMethods()}。`);
     }
     if (method === "qr" && hasQrConflictInput(flags)) {
-      throw new CliError("login --method qr 不能和 --authorization、--client-id、--account 或 --password 同时使用。");
+      throw new CliError("login --method qr 不能和 --authorization、--account 或 --password 同时使用。");
     }
     if (method === "manual" && hasPasswordLoginInput(flags)) {
       throw new CliError(PASSWORD_LOGIN_REMOVED_MESSAGE);
@@ -134,9 +142,6 @@ async function resolveLoginMethod(options) {
   if (options.explicitManual || hasFlag(flags, "authorization")) {
     return "manual";
   }
-  if (hasFlag(flags, "client-id")) {
-    throw new CliError("扫码登录不能和 --client-id 同时使用；需要手动 token 请使用 --manual 或 --authorization。");
-  }
   if (shouldPromptForLoginMethod(options)) {
     return promptForLoginMethod(options.io);
   }
@@ -144,7 +149,7 @@ async function resolveLoginMethod(options) {
 }
 
 function hasQrConflictInput(flags) {
-  return hasFlag(flags, "authorization") || hasFlag(flags, "client-id") || hasFlag(flags, "account") || hasFlag(flags, "password");
+  return hasFlag(flags, "authorization") || hasFlag(flags, "account") || hasFlag(flags, "password");
 }
 
 function hasPasswordLoginInput(flags) {
@@ -186,9 +191,6 @@ async function resolveHouseId(options) {
   }
   const houses = await new HouseClient({ baseUrl: options.baseUrl }).listHouses(options.credentials);
   if (houses.length === 0) {
-    if (options.currentHouseId) {
-      return options.currentHouseId;
-    }
     throw new CliError("登录成功，但未拉取到家庭列表。请确认账号已有家庭，或使用 --house-id <id> 手动指定。");
   }
   if (houses.length === 1) {
@@ -264,11 +266,10 @@ function selectBizType(answer, fallback) {
 async function runQrLogin(flags, context) {
   const { runQrLoginFlow } = require("../auth/qrLogin");
   const resolvedClientDevice = resolveQrLoginClientDeviceId(flags, context);
-  const previous = ensureProfile(context.config, context.profileName);
   const explicitBizType = getExplicitBizType(flags);
   const bizType = await resolveBizType({
     explicitBizType,
-    currentBizType: previous.bizType,
+    currentBizType: DEFAULT_BIZ_TYPE,
     io: context.io,
     asJson: context.asJson,
   });
@@ -278,7 +279,7 @@ async function runQrLogin(flags, context) {
   const qrResult = await runQrLoginFlow({
     io: context.io,
     json: context.asJson,
-    baseUrl: getStringFlag(flags, "base-url", context.io.env.YEELIGHT_QR_LOGIN_BASE_URL || ""),
+    baseUrl: context.baseUrl,
     clientDeviceId: resolvedClientDevice.clientDeviceId,
     houseId: getStringFlag(flags, "house-id", ""),
     timeoutMs: Number(getStringFlag(flags, "timeout-ms", "") || 180000),
@@ -305,7 +306,6 @@ async function runQrLogin(flags, context) {
   }
 
   const authorization = qrResult.credentials.authorization;
-  const clientId = qrResult.credentials.clientId || previous.clientId || "";
   const houseId = qrResult.credentials.houseId || getStringFlag(flags, "house-id", "");
   const selectedHouseId = await resolveHouseId({
     flags,
@@ -313,19 +313,18 @@ async function runQrLogin(flags, context) {
     asJson: context.asJson,
     credentials: {
       authorization,
-      clientId,
       bizType,
     },
     explicitHouseId: houseId,
-    currentHouseId: previous.houseId,
-    baseUrl: getStringFlag(flags, "base-url", context.io.env.YEELIGHT_QR_LOGIN_BASE_URL || ""),
+    baseUrl: context.baseUrl,
   });
   context.config.auth.profiles[context.profileName] = {
     authorization,
-    clientId,
     houseId: selectedHouseId,
     bizType,
+    region: context.region,
   };
+  applyRegionEndpoints(context.config, context.region);
   const path = saveConfig(context.config, { env: context.io.env });
   const result = {
     ok: true,
@@ -340,8 +339,8 @@ async function runQrLogin(flags, context) {
   } else {
     context.io.stdout.write(`已通过扫码登录并保存凭证：${context.profileName}\n`);
     context.io.stdout.write(`Authorization：${result.credentials.authorization}\n`);
-    context.io.stdout.write(`Client-Id：${result.credentials.clientId}\n`);
     context.io.stdout.write(`House-Id：${result.credentials.houseId}\n`);
+    context.io.stdout.write(`Region：${context.region}\n`);
     context.io.stdout.write(`业务类型：${formatBizTypeWithCode(bizType)}\n`);
   }
   return 0;
@@ -414,9 +413,9 @@ function ensureProfile(config, profileName) {
   if (!config.auth.profiles[profileName]) {
     config.auth.profiles[profileName] = {
       authorization: "",
-      clientId: "",
       houseId: "",
       bizType: DEFAULT_BIZ_TYPE,
+      region: "cn",
     };
   }
   return config.auth.profiles[profileName];
@@ -430,9 +429,8 @@ async function promptForCredentials(io, current) {
 
   try {
     const authorization = await question(rl, `Authorization${current.authorization ? "（回车保留当前值）" : ""}: `);
-    const clientId = await question(rl, `Client-Id${current.clientId ? "（回车保留当前值）" : ""}: `);
     const houseId = await question(rl, `House-Id${current.houseId ? "（回车保留当前值）" : ""}: `);
-    return { authorization, clientId, houseId };
+    return { authorization, houseId };
   } finally {
     rl.close();
   }

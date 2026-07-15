@@ -16,7 +16,7 @@ test("家庭列表归一化支持 APP house 字段", () => {
   ]);
 });
 
-test("家庭列表为空时回退到 DALI SaaS 项目列表", async () => {
+test("普通家庭列表为空时不会跨业务域回退到 SaaS 项目", async () => {
   const calls = [];
   const client = new HouseClient({
     baseUrl: "https://api.example.test",
@@ -25,6 +25,24 @@ test("家庭列表为空时回退到 DALI SaaS 项目列表", async () => {
       if (String(url).endsWith("/apis/iot/v1/house/r/list")) {
         return responseJson({ success: true, data: [] });
       }
+      throw new Error(`未预期的 URL：${url}`);
+    },
+  });
+
+  const houses = await client.listHouses({ authorization: "Bearer token", bizType: "0" });
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].options.headers.Authorization, "Bearer token");
+  assert.equal(calls[0].options.headers.bizType, "0");
+  assert.deepEqual(houses, []);
+});
+
+test("显式商照模式只查询 SaaS 项目", async () => {
+  const calls = [];
+  const client = new HouseClient({
+    baseUrl: "https://api.example.test",
+    fetch: async (url, options) => {
+      calls.push({ url: String(url), options });
       if (String(url).endsWith("/apis/commercial/saas/v1/user/r/saas-role")) {
         return responseJson({ success: true, data: "owner" });
       }
@@ -46,11 +64,10 @@ test("家庭列表为空时回退到 DALI SaaS 项目列表", async () => {
     },
   });
 
-  const houses = await client.listHouses({ authorization: "Bearer token", clientId: "client" });
+  const houses = await client.listHouses({ authorization: "Bearer token", bizType: "1" });
 
-  assert.equal(calls.length, 4);
-  assert.equal(calls[0].options.headers.Authorization, "Bearer token");
-  assert.equal(calls[0].options.headers.bizType, "1");
+  assert.equal(calls.length, 3);
+  assert.equal(calls.some((call) => call.url.includes("/apis/iot/v1/house/r/list")), false);
   assert.deepEqual(houses, [
     { houseId: "2001", name: "DALI 项目", source: "project" },
   ]);

@@ -3,6 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 const { DEFAULT_BIZ_TYPE, normalizeBizType } = require("../config/bizType");
+const { DEFAULT_REGION, normalizeRegion } = require("../config/region");
 const { listAdapters } = require("../mcp/registry");
 
 function listEnabledMcpServers(config) {
@@ -36,20 +37,24 @@ function isClientConfigurableMcp(mcpConfig) {
 function buildEnvHeaders() {
   return {
     Authorization: "${YEELIGHT_AUTHORIZATION}",
-    "Client-Id": "${YEELIGHT_CLIENT_ID}",
     "House-Id": "${YEELIGHT_HOUSE_ID}",
+    "Yeelight-Region": "${YEELIGHT_REGION}",
     bizType: "${YEELIGHT_BIZ_TYPE}",
   };
 }
 
 function buildConcreteHeaders(config, profileName) {
   const profile = config.auth.profiles[profileName || "default"] || {};
-  return {
+  return filterEmptyHeaders({
     Authorization: profile.authorization || "",
-    "Client-Id": profile.clientId || "",
     "House-Id": profile.houseId || "",
+    "Yeelight-Region": normalizeRegion(profile.region || DEFAULT_REGION),
     bizType: normalizeBizType(profile.bizType, DEFAULT_BIZ_TYPE),
-  };
+  });
+}
+
+function filterEmptyHeaders(headers) {
+  return Object.fromEntries(Object.entries(headers).filter(([, value]) => value !== undefined && value !== null && String(value) !== ""));
 }
 
 function readExistingJson(filePath) {

@@ -1,6 +1,6 @@
 "use strict";
 
-const DEFAULT_BIZ_TYPE = "1";
+const DEFAULT_BIZ_TYPE = "0";
 
 const BIZ_TYPE_OPTIONS = [
   {
@@ -29,7 +29,7 @@ function normalizeBizType(value, fallback = DEFAULT_BIZ_TYPE) {
 function formatBizType(value) {
   const normalized = normalizeBizType(value, DEFAULT_BIZ_TYPE);
   const matched = BIZ_TYPE_OPTIONS.find((option) => option.value === normalized);
-  return matched ? matched.label : "商照项目";
+  return matched ? matched.label : "普通家庭";
 }
 
 function formatBizTypeWithCode(value) {

@@ -24,6 +24,14 @@ const METADATA_TOOL_DEFINITIONS = [
     },
   },
   {
+    name: "yeelight_metadata.list_houses",
+    description: "列出当前 Authorization 与 Region 可访问的 Pro 家庭；后续在 request.context.houseId 中传入目标家庭即可请求级切换。",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
     name: "yeelight_metadata.list_tasks",
     description: "浏览、搜索或查看 Metadata 任务。传 task 返回单任务详情；传 query 搜索任务和 action；都不传则按 group 分页列出任务摘要。",
     inputSchema: {

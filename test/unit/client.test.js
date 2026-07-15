@@ -6,6 +6,7 @@ const path = require("node:path");
 const test = require("node:test");
 const { buildClaudeConfig } = require("../../src/clients/claude");
 const { buildVscodeConfig } = require("../../src/clients/vscode");
+const { buildConcreteHeaders, buildEnvHeaders } = require("../../src/clients/common");
 const { createDefaultConfig } = require("../../src/config/defaults");
 
 test("Claude 配置匹配 cloud+metadata golden", () => {
@@ -20,6 +21,19 @@ test("VS Code 配置匹配 cloud+metadata golden", () => {
   const expected = readGolden("vscode-config.cloud-metadata.json");
 
   assert.deepEqual(actual, expected);
+});
+
+test("云端 Header 只包含 Authorization、Region 和非空业务上下文", () => {
+  const config = createDefaultConfig();
+  config.auth.profiles.default.authorization = "Bearer token";
+
+  assert.deepEqual(buildConcreteHeaders(config, "default"), {
+    Authorization: "Bearer token",
+    "Yeelight-Region": "cn",
+    bizType: "0",
+  });
+  assert.equal(Object.hasOwn(buildEnvHeaders(), "Client-Id"), false);
+  assert.equal(buildEnvHeaders()["Yeelight-Region"], "${YEELIGHT_REGION}");
 });
 
 test("Claude 配置在 LAN 已配置时使用 mcp-remote allow-http 且不加认证 Header", () => {

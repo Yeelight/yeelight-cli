@@ -56,12 +56,12 @@ Start the interactive workspace:
 yeelight-ai
 ```
 
-The CLI checks the local profile, reuses cached credentials when approved,
-guides you through QR login when required, asks whether to use a consumer home
-(`bizType=0`) or commercial-lighting project (`bizType=1`), selects a home,
-and opens the command workspace. Use the Yeelight app to scan and approve the
-terminal QR code; manual token entry remains available for recovery and
-non-interactive environments.
+The CLI checks the local profile, resolves the account Region, and guides you
+through QR login when required. In Yeelight Pro APP, tap the `+` button in the
+top-right corner of Home, choose **MCP Authorization**, then scan the terminal
+QR code. Login defaults to consumer Pro homes (`bizType=0`); commercial-lighting
+projects are queried only when `bizType=1` is selected explicitly. Manual token
+entry remains available for recovery and non-interactive environments.
 
 The workspace shows the selected home, Cloud and Metadata endpoints, and a
 recommended next action. Its menus accept both numbers and semantic aliases
@@ -117,18 +117,19 @@ select a business type, or support app integration, use:
 
 ```bash
 yeelight-ai login
-yeelight-ai login --method qr --biz-type 0
+yeelight-ai login --method qr --region cn --biz-type 0
 yeelight-ai login --method qr --client-device-id cli-debug-1 --no-wait --json
-yeelight-ai login --authorization <token> --client-id <clientId> --house-id <houseId>
-yeelight-ai login --authorization <token> --client-id <clientId> --biz-type 1
+yeelight-ai login --authorization <token> --region eu --house-id <houseId>
+yeelight-ai login --authorization <token> --region cn --biz-type 1
 yeelight-ai login --manual
 ```
 
 The QR payload has the form `cli&clientDeviceId&qrCodeId`. When no device ID
 is supplied, the CLI generates and persists a `cli_...` identifier for later
-logins; an explicit value applies only to that invocation. Cloud and Metadata
-requests automatically receive the saved `Authorization`, `Client-Id`,
-`House-Id`, and `bizType` headers.
+logins; an explicit value applies only to that invocation. Region resolution is
+`--region` -> `YEELIGHT_CLOUD_REGION` -> saved profile -> `cn`. Cloud and
+Metadata requests receive `Authorization`, `Yeelight-Region`, optional
+`House-Id`, and `bizType`; users do not configure a Client ID.
 
 ## MCP Tool Invocation
 

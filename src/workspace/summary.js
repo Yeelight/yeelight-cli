@@ -15,6 +15,7 @@ function buildWorkspaceSummary(loadResult) {
     configPath: loadResult.path,
     loggedIn: Boolean(profile.authorization && profile.houseId),
     houseId: profile.houseId || "",
+    region: profile.region || "cn",
     bizType: normalizeBizType(profile.bizType, DEFAULT_BIZ_TYPE),
     bizTypeLabel: formatBizType(profile.bizType),
     mcp,

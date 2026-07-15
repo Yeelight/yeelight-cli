@@ -44,12 +44,13 @@ This keeps a development checkout separate from the default user profile.
 
 ```bash
 yeelight-ai login
-yeelight-ai login --method password --account <phone-or-email>
+yeelight-ai login --method qr --region cn
 ```
 
-The password prompt is preferred over `--password`, which can expose a password
-through shell history or process inspection. When an account has multiple homes,
-select one interactively or provide `--house-id` in a controlled script.
+In Yeelight Pro APP, tap Home's top-right `+`, choose **MCP Authorization**, and
+scan the terminal QR code. When an account has multiple homes, select one
+interactively or provide `--house-id` in a controlled script. Use `--region`
+for `cn`, `sg`, `us`, or `eu`; the default is `cn`.
 
 ## Validate A New Installation
 
@@ -120,8 +121,8 @@ not attach configuration files or credential-bearing output.
 ## Troubleshooting
 
 - Non-interactive terminal: use explicit subcommands such as `doctor --json`.
-- No home returned: verify account membership in the Yeelight app, then log in
-  again or pass a known home ID.
+- No home returned: verify Region and Pro home membership. Consumer mode never
+  falls back to commercial projects; select `bizType=1` explicitly when needed.
 - Cloud or Metadata unavailable: run the corresponding `doctor --mcp ...
   --probe` command and verify network access.
 - LAN unavailable: verify LAN CONTROL, local routing, gateway address, and port.

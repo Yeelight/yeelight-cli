@@ -35,11 +35,6 @@ function extractToken(qrInfo) {
   return token.accessToken || token.token || "";
 }
 
-function extractClientId(qrInfo) {
-  const token = qrInfo && qrInfo.token && typeof qrInfo.token === "object" ? qrInfo.token : {};
-  return token.clientId || "";
-}
-
 function extractHouseId(qrInfo) {
   const source = qrInfo && typeof qrInfo.source === "string" ? qrInfo.source : "";
   if (!source) {
@@ -67,7 +62,6 @@ module.exports = {
   DEFAULT_QR_LOGIN_POLL_INTERVAL_MS,
   DEFAULT_QR_LOGIN_TIMEOUT_MS,
   buildQrPayload,
-  extractClientId,
   extractHouseId,
   extractQrInfo,
   extractToken,

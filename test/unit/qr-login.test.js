@@ -11,7 +11,6 @@ const { loadConfig, saveConfig } = require("../../src/config/store");
 const { encodeQr, renderQrTerminal } = require("../../src/output/qrcode");
 const {
   buildQrPayload,
-  extractClientId,
   extractHouseId,
   extractQrInfo,
   extractToken,
@@ -23,7 +22,7 @@ test("扫码登录协议按 CLI 授权二维码格式生成 payload", () => {
   assert.equal(buildQrPayload("qr-1", "cli-device-1"), "cli&cli-device-1&qr-1");
 });
 
-test("扫码登录响应解析 token、clientId 和 houseId", () => {
+test("扫码登录响应只解析公开 token 和 houseId", () => {
   const response = {
     success: true,
     data: {
@@ -38,7 +37,6 @@ test("扫码登录响应解析 token、clientId 和 houseId", () => {
   const info = extractQrInfo(response);
 
   assert.equal(extractToken(info), "token-qr-123456");
-  assert.equal(extractClientId(info), "client-qr-123456");
   assert.equal(extractHouseId(info), "house-qr-123456");
 });
 
@@ -120,9 +118,10 @@ test("login --method qr 成功后保存扫码返回的 token 且输出脱敏", a
   assert.equal(result.credentials.authorization.includes("token-qr-secret-123456"), false);
   const saved = loadConfig({ env: output.io.env }).config.auth.profiles.default;
   assert.equal(saved.authorization, "Bearer token-qr-secret-123456");
-  assert.equal(saved.clientId, "client-qr-123456");
+  assert.equal(Object.hasOwn(saved, "clientId"), false);
   assert.equal(saved.houseId, "house-qr-123456");
-  assert.equal(saved.bizType, "1");
+  assert.equal(saved.bizType, "0");
+  assert.equal(saved.region, "cn");
 });
 
 test("login --qr 仍可显式进入扫码流程并支持 no-wait", async (t) => {
@@ -322,8 +321,6 @@ test("login --authorization 继续支持手动 token 保存", async () => {
     const code = await runLoginCommand([
       "--authorization",
       "token-manual-secret-123456",
-      "--client-id",
-      "client-manual-123456",
       "--biz-type",
       "0",
       "--json",
@@ -334,7 +331,7 @@ test("login --authorization 继续支持手动 token 保存", async () => {
     assert.equal(result.credentials.authorization.includes("token-manual-secret-123456"), false);
     const saved = loadConfig({ env: output.io.env }).config.auth.profiles.default;
     assert.equal(saved.authorization, "Bearer token-manual-secret-123456");
-    assert.equal(saved.clientId, "client-manual-123456");
+    assert.equal(Object.hasOwn(saved, "clientId"), false);
     assert.equal(saved.houseId, "house-from-manual-list");
     assert.equal(saved.bizType, "0");
   } finally {
@@ -369,8 +366,109 @@ test("login --qr 与手动 token 参数互斥", async () => {
 
   await assert.rejects(
     () => runLoginCommand(["--qr", "--authorization", "token", "--json"], output.io),
-    /不能和 --manual、--method、--authorization、--client-id、--account 或 --password 同时使用/
+    /不能和 --manual、--method、--authorization、--account 或 --password 同时使用/
   );
+});
+
+test("login 明确拒绝已移除的 client-id 参数", async () => {
+  const output = captureIo({});
+  await assert.rejects(
+    () => runLoginCommand(["--client-id", "legacy", "--json"], output.io),
+    /Client ID 已从公开认证契约中移除/
+  );
+});
+
+test("扫码登录 Region 同时驱动二维码和家庭列表端点", async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "yeelight-cli-qr-region-"));
+  const originalFetch = global.fetch;
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+  const calls = [];
+  global.fetch = async (url) => {
+    calls.push(String(url));
+    if (String(url).includes("/query/qrcode/")) {
+      return responseJson({ success: true, data: { qrCodeId: "qr-sg", status: "CREATED" } });
+    }
+    if (String(url).includes("/check/qrcode/")) {
+      return responseJson({ success: true, data: { status: "LOGIN", token: { accessToken: "token-sg" } } });
+    }
+    if (String(url).endsWith("/apis/iot/v1/house/r/list")) {
+      return responseJson({ success: true, data: [{ id: "house-sg", name: "新加坡家庭" }] });
+    }
+    throw new Error(`未预期的 URL：${url}`);
+  };
+
+  await runLoginCommand(["--method", "qr", "--region", "sg", "--json", "--poll-interval-ms", "1"], captureIo({ YEELIGHT_AI_CONFIG_DIR: dir }).io);
+
+  assert.equal(calls.length, 3);
+  assert.equal(calls.every((url) => url.startsWith("https://api-sg.yeelight.com/")), true);
+  const saved = loadConfig({ env: { ...process.env, YEELIGHT_AI_CONFIG_DIR: dir } }).config;
+  assert.equal(saved.auth.profiles.default.region, "sg");
+  assert.equal(saved.mcp.metadata.endpoint, "https://api-sg.yeelight.com/apis/metadata_mcp_server/v1/mcp");
+});
+
+test("旧商照 profile 不会改变下一次二维码登录的 Pro 默认", async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "yeelight-cli-qr-pro-default-"));
+  const env = { ...process.env, YEELIGHT_AI_CONFIG_DIR: dir };
+  const config = loadConfig({ env }).config;
+  config.auth.profiles.default.bizType = "1";
+  saveConfig(config, { env });
+  const originalFetch = global.fetch;
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+  global.fetch = async (url, options) => {
+    assert.equal(options.headers.bizType, "0");
+    if (String(url).includes("/query/qrcode/")) {
+      return responseJson({ success: true, data: { qrCodeId: "qr-pro", status: "CREATED" } });
+    }
+    if (String(url).includes("/check/qrcode/")) {
+      return responseJson({ success: true, data: { status: "LOGIN", token: { accessToken: "token-pro" }, source: "cli:{\"houseId\":\"house-pro\"}" } });
+    }
+    throw new Error(`未预期的 URL：${url}`);
+  };
+
+  await runLoginCommand(["--method", "qr", "--json", "--poll-interval-ms", "1"], captureIo({ YEELIGHT_AI_CONFIG_DIR: dir }).io);
+
+  assert.equal(loadConfig({ env }).config.auth.profiles.default.bizType, "0");
+});
+
+test("Pro 家庭为空时不会复用旧商照 profile 的 House ID", async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "yeelight-cli-qr-pro-empty-"));
+  const env = { ...process.env, YEELIGHT_AI_CONFIG_DIR: dir };
+  const config = loadConfig({ env }).config;
+  config.auth.profiles.default.houseId = "legacy-saas-project";
+  config.auth.profiles.default.bizType = "1";
+  saveConfig(config, { env });
+  const originalFetch = global.fetch;
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+  const calls = [];
+  global.fetch = async (url, options) => {
+    calls.push(String(url));
+    assert.equal(options.headers.bizType, "0");
+    if (String(url).includes("/query/qrcode/")) {
+      return responseJson({ success: true, data: { qrCodeId: "qr-pro-empty", status: "CREATED" } });
+    }
+    if (String(url).includes("/check/qrcode/")) {
+      return responseJson({ success: true, data: { status: "LOGIN", token: { accessToken: "token-pro-empty" } } });
+    }
+    if (String(url).endsWith("/apis/iot/v1/house/r/list")) {
+      return responseJson({ success: true, data: [] });
+    }
+    throw new Error(`未预期的 URL：${url}`);
+  };
+
+  await assert.rejects(
+    () => runLoginCommand(["--method", "qr", "--json", "--poll-interval-ms", "1"], captureIo({ YEELIGHT_AI_CONFIG_DIR: dir }).io),
+    /未拉取到家庭列表/
+  );
+
+  assert.equal(calls.some((url) => url.includes("/apis/commercial/saas/")), false);
+  assert.equal(loadConfig({ env }).config.auth.profiles.default.houseId, "legacy-saas-project");
+  assert.equal(loadConfig({ env }).config.auth.profiles.default.bizType, "1");
 });
 
 test("公开模式默认开放扫码登录", async (t) => {

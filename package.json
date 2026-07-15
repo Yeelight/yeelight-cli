@@ -1,6 +1,6 @@
 {
   "name": "yeelight-ai",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Unified CLI for Yeelight Cloud, Metadata, and LAN MCP services",
   "type": "commonjs",
   "bin": {

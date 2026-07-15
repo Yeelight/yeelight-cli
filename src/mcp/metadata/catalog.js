@@ -2,6 +2,7 @@
 
 const METADATA_TOOLS = [
   "yeelight_metadata.list_groups",
+  "yeelight_metadata.list_houses",
   "yeelight_metadata.list_tasks",
   "yeelight_metadata.list_actions",
   "yeelight_metadata.get_action_schema",

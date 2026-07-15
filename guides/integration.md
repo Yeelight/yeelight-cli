@@ -24,6 +24,9 @@ Run the interactive login flow:
 yeelight-ai login
 ```
 
+Choose the account Region when prompted. In Yeelight Pro APP, tap Home's
+top-right `+`, select **MCP Authorization**, and scan the terminal QR code.
+
 For password login, enter the password at the prompt:
 
 ```bash
@@ -33,12 +36,13 @@ yeelight-ai login --method password --account <phone-or-email>
 For an existing token, use manual mode:
 
 ```bash
-yeelight-ai login --authorization <token> --client-id <clientId> --house-id <houseId>
+yeelight-ai login --authorization <token> --region cn --house-id <houseId>
 ```
 
-Cloud and Metadata calls automatically receive `Authorization`, `Client-Id`,
-and `House-Id` from the selected local profile. LAN calls never receive these
-cloud headers.
+Cloud and Metadata calls receive `Authorization`, `Yeelight-Region`, and an
+optional `House-Id` from the selected local profile. Region precedence is
+`--region` -> `YEELIGHT_CLOUD_REGION` -> profile -> `cn`. LAN calls never
+receive cloud headers, and users do not configure a Client ID.
 
 ## Discover Before Calling
 
@@ -81,6 +85,7 @@ returns only parsed business data for scripts.
 The current task-oriented surface contains:
 
 - `yeelight_metadata.list_groups`
+- `yeelight_metadata.list_houses`
 - `yeelight_metadata.list_tasks`
 - `yeelight_metadata.list_actions`
 - `yeelight_metadata.get_action_schema`

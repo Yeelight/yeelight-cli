@@ -19,9 +19,9 @@ function redactSecret(value, options = {}) {
 function redactProfile(profile) {
   return {
     authorization: redactSecret(profile.authorization),
-    clientId: redactSecret(profile.clientId),
     houseId: redactSecret(profile.houseId, { hideCompletely: true }),
     bizType: normalizeBizType(profile.bizType, DEFAULT_BIZ_TYPE),
+    region: profile.region || "cn",
   };
 }
 

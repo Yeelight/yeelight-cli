@@ -8,7 +8,6 @@ const {
   DEFAULT_QR_LOGIN_POLL_INTERVAL_MS,
   DEFAULT_QR_LOGIN_TIMEOUT_MS,
   buildQrPayload,
-  extractClientId,
   extractHouseId,
   extractToken,
   generateQrLoginClientDeviceId,
@@ -85,7 +84,6 @@ async function runQrLoginFlow(options = {}) {
       expireAt: checked.expireAt || created.expireAt || null,
       credentials: {
         authorization: normalizeAuthorization(accessToken),
-        clientId: extractClientId(checked),
         houseId: extractHouseId(checked),
       },
     };
@@ -95,7 +93,7 @@ async function runQrLoginFlow(options = {}) {
 }
 
 function printQrLoginPrompt(io, details) {
-  io.stdout.write("请使用 Yeelight / 易来 APP 扫描下面的二维码，并在手机上确认授权。\n\n");
+  io.stdout.write("请打开 Yeelight Pro APP，点击首页右上角 + -> MCP 授权，扫描下面的二维码。\n\n");
   io.stdout.write(`${renderQrTerminal(details.payload)}\n`);
   io.stdout.write(`二维码 ID：${details.qrCodeId}\n`);
   io.stdout.write(`CLI 设备标识：${details.clientDeviceId}\n`);

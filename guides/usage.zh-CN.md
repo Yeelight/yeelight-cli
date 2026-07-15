@@ -43,10 +43,10 @@ node bin/yeelight-ai.js doctor --json
 
 ```bash
 yeelight-ai login
-yeelight-ai login --method password --account <手机号或邮箱>
+yeelight-ai login --method qr --region cn
 ```
 
-优先通过交互提示输入密码。`--password` 可能让密码出现在 shell 历史或进程信息中。账号包含多个家庭时，应交互选择；受控脚本中可以明确传入 `--house-id`。
+在 Yeelight Pro APP 首页点击右上角 `+`，选择 **MCP 授权**，扫描终端二维码。账号包含多个家庭时应交互选择；受控脚本中可以明确传入 `--house-id`。`--region` 支持 `cn`、`sg`、`us`、`eu`，默认 `cn`。
 
 ## 验证新安装
 
@@ -110,7 +110,7 @@ npm run smoke
 ## 常见问题
 
 - 非交互终端：使用 `doctor --json` 等明确子命令。
-- 没有家庭：在 Yeelight APP 中确认账号归属，再重新登录或传入已知家庭 ID。
+- 没有家庭：检查 Region 和 Yeelight Pro 家庭归属。普通家庭模式不会回退商照项目；需要商照项目时显式选择 `bizType=1`。
 - Cloud 或 Metadata 不可用：运行对应的 `doctor --mcp ... --probe` 并检查网络。
 - LAN 不可用：检查 LAN CONTROL、本地路由、网关地址和端口。
 - 参数未知：使用 `mcp describe` 或 Metadata `get_action_schema`。

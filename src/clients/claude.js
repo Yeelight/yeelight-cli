@@ -11,12 +11,12 @@ function buildClaudeConfig(config) {
     const env = {};
     if (server.requiresHeaders) {
       args.push("--header", "Authorization:${YEELIGHT_AUTHORIZATION}");
-      args.push("--header", "Client-Id:${YEELIGHT_CLIENT_ID}");
       args.push("--header", "House-Id:${YEELIGHT_HOUSE_ID}");
+      args.push("--header", "Yeelight-Region:${YEELIGHT_REGION}");
       args.push("--header", "bizType:${YEELIGHT_BIZ_TYPE}");
       env.YEELIGHT_AUTHORIZATION = "${YEELIGHT_AUTHORIZATION}";
-      env.YEELIGHT_CLIENT_ID = "${YEELIGHT_CLIENT_ID}";
       env.YEELIGHT_HOUSE_ID = "${YEELIGHT_HOUSE_ID}";
+      env.YEELIGHT_REGION = "${YEELIGHT_REGION}";
       env.YEELIGHT_BIZ_TYPE = "${YEELIGHT_BIZ_TYPE}";
     }
     if (server.endpoint.startsWith("http://")) {
