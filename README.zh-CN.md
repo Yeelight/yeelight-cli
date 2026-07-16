@@ -99,6 +99,14 @@ CLI 会自动完成以下准备工作：
 6. 保存 MCP 调用所需的 `Authorization`、`Yeelight-Region` 和 `House-Id`。
 7. 进入工作台。
 
+请务必使用 **Yeelight Pro APP**：在首页点击右上角 `+`，选择 **MCP 授权**，再扫描
+终端二维码。不要使用“添加设备”等其它扫码入口。
+
+<p align="center">
+  <img src="readme/images/yeelight-pro-app-mcp-authorization.jpg" width="360" alt="Yeelight Pro APP 首页加号菜单中的 MCP 授权入口" />
+</p>
+<p align="center">图 1：Yeelight Pro APP 首页 -> 右上角 + -> MCP 授权</p>
+
 工作台会先展示当前家庭、Cloud MCP、Metadata MCP 和推荐下一步，然后把入口分成常用和高级两组：
 
 ```text
@@ -134,7 +142,8 @@ Metadata MCP：远端 https://api.yeelight.com/apis/metadata_mcp_server/v1/mcp
 yeelight-ai
 ```
 
-首次启动时，按提示用 Yeelight / 易来 APP 扫码确认，然后选择家庭。登录上下文保存后会进入工作台。
+首次启动时，按提示使用 Yeelight Pro APP 首页右上角 `+` 菜单中的 **MCP 授权**
+扫码确认，然后选择家庭。登录上下文保存后会进入工作台。
 
 2. 在工作台选择 `1. 诊断当前配置`，也可以直接输入 `doctor`。
 
@@ -242,14 +251,14 @@ yeelight-ai mcp configure metadata --remote
 
 ```bash
 yeelight-ai login
-yeelight-ai login --method qr --region cn
-yeelight-ai login --method qr --region eu --biz-type 0
+yeelight-ai login --qr --region cn
+yeelight-ai login --qr --region eu --biz-type 0
 ```
 
 和 APP 联调时，可以固定 CLI 设备标识并只生成二维码，不等待确认：
 
 ```bash
-yeelight-ai login --method qr --client-device-id cli-debug-1 --no-wait --json
+yeelight-ai login --qr --client-device-id cli-debug-1 --no-wait --json
 ```
 
 不显式传 `--client-device-id` 时，CLI 会首次生成一个 `cli_...` 设备标识并保存到本地配置，后续扫码默认复用；显式传入的值只覆盖当次扫码。

@@ -50,7 +50,7 @@ This keeps a development checkout separate from the default user profile.
 
 ```bash
 yeelight-ai login
-yeelight-ai login --method qr --region cn
+yeelight-ai login --qr --region cn
 ```
 
 In Yeelight Pro APP, tap Home's top-right `+`, choose **MCP Authorization**, and

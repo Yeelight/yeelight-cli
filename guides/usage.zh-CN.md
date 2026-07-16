@@ -48,7 +48,7 @@ node bin/yeelight-ai.js doctor --json
 
 ```bash
 yeelight-ai login
-yeelight-ai login --method qr --region cn
+yeelight-ai login --qr --region cn
 ```
 
 在 Yeelight Pro APP 首页点击右上角 `+`，选择 **MCP 授权**，扫描终端二维码。账号包含多个家庭时应交互选择；受控脚本中可以明确传入 `--house-id`。`--region` 支持 `cn`、`sg`、`us`、`eu`，默认 `cn`。

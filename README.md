@@ -84,6 +84,11 @@ QR code. Login defaults to consumer Pro homes (`bizType=0`); commercial-lighting
 projects are queried only when `bizType=1` is selected explicitly. Manual token
 entry remains available for recovery and non-interactive environments.
 
+<p align="center">
+  <img src="readme/images/yeelight-pro-app-mcp-authorization.jpg" width="360" alt="Yeelight Pro APP Home plus menu with MCP Authorization" />
+</p>
+<p align="center">Figure 1: Yeelight Pro APP Home -> top-right + -> MCP Authorization</p>
+
 The workspace shows the selected home, Cloud and Metadata endpoints, and a
 recommended next action. Its menus accept both numbers and semantic aliases
 such as `devices`, `doctor`, `tools`, `switch`, and `back`.
@@ -138,8 +143,8 @@ select a business type, or support app integration, use:
 
 ```bash
 yeelight-ai login
-yeelight-ai login --method qr --region cn --biz-type 0
-yeelight-ai login --method qr --client-device-id cli-debug-1 --no-wait --json
+yeelight-ai login --qr --region cn --biz-type 0
+yeelight-ai login --qr --client-device-id cli-debug-1 --no-wait --json
 yeelight-ai login --authorization <token> --region eu --house-id <houseId>
 yeelight-ai login --authorization <token> --region cn --biz-type 1
 yeelight-ai login --manual
