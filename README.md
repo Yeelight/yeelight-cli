@@ -2,6 +2,16 @@
 
 [简体中文](README.zh-CN.md)
 
+## Official Repository And Mirrors
+
+[GitHub](https://github.com/Yeelight/yeelight-cli) is the canonical source for
+issues, contributions, CI, and releases. Read-only mirrors are available on
+[Gitee](https://gitee.com/yeelight/yeelight-cli) and
+[GitCode](https://gitcode.com/Yeelight/yeelight-cli) for users who cannot reach
+GitHub reliably, with [GitLab.com](https://gitlab.com/Yeelight/yeelight-cli) as
+an additional global fallback. Clone from any reachable source, but report
+issues and contribute changes on GitHub.
+
 `yeelight-ai` is the official command-line workspace for Yeelight Cloud,
 Metadata, and LAN MCP services. It provides one installation, one local profile,
 safe device shortcuts, MCP discovery and invocation, diagnostics, and client
@@ -37,6 +47,17 @@ npm install --global yeelight-ai
 yeelight-ai --version
 yeelight-ai --help
 ```
+
+If npm is slow or unreachable in mainland China, use npmmirror for this one
+installation without changing the global registry:
+
+```bash
+npm install --global yeelight-ai --registry=https://registry.npmmirror.com
+npm config get registry
+```
+
+If you previously changed the global registry, restore the official source with
+`npm config set registry https://registry.npmjs.org/`.
 
 To run from a source checkout:
 
