@@ -2,6 +2,11 @@
 
 [English](integration.md) | [README](../README.zh-CN.md) | [使用指南](usage.zh-CN.md)
 
+仓库入口：[GitHub](https://github.com/Yeelight/yeelight-cli) 是规范源；无法访问
+GitHub 时可使用只读的 [Gitee](https://gitee.com/yeelight/yeelight-cli) 或
+[GitCode](https://gitcode.com/Yeelight/yeelight-cli) 国内镜像，
+[GitLab.com](https://gitlab.com/Yeelight/yeelight-cli) 是全球备用源。
+
 本文面向通过 `yeelight-ai` 将 Yeelight MCP 服务接入本地 AI 工具、脚本或开发流程的开发者。
 
 ## 选择服务

@@ -2,6 +2,12 @@
 
 [简体中文](usage.zh-CN.md) | [README](../README.md) | [Integration guide](integration.md)
 
+Repository access: [GitHub](https://github.com/Yeelight/yeelight-cli) is
+canonical; use the read-only [Gitee](https://gitee.com/yeelight/yeelight-cli) or
+[GitCode](https://gitcode.com/Yeelight/yeelight-cli) mirror when GitHub is not
+reachable, with [GitLab.com](https://gitlab.com/Yeelight/yeelight-cli) as a
+global fallback.
+
 ## Install From npm
 
 ```bash

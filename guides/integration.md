@@ -2,6 +2,12 @@
 
 [简体中文](integration.zh-CN.md) | [README](../README.md) | [Usage guide](usage.md)
 
+Repository access: [GitHub](https://github.com/Yeelight/yeelight-cli) is
+canonical; use the read-only [Gitee](https://gitee.com/yeelight/yeelight-cli) or
+[GitCode](https://gitcode.com/Yeelight/yeelight-cli) mirror when GitHub is not
+reachable, with [GitLab.com](https://gitlab.com/Yeelight/yeelight-cli) as a
+global fallback.
+
 This guide is for developers integrating Yeelight MCP services into local AI
 tools, scripts, or development workflows through `yeelight-ai`.
 

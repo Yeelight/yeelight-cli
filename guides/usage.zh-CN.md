@@ -2,6 +2,11 @@
 
 [English](usage.md) | [README](../README.zh-CN.md) | [接入指南](integration.zh-CN.md)
 
+仓库入口：[GitHub](https://github.com/Yeelight/yeelight-cli) 是规范源；无法访问
+GitHub 时可使用只读的 [Gitee](https://gitee.com/yeelight/yeelight-cli) 或
+[GitCode](https://gitcode.com/Yeelight/yeelight-cli) 国内镜像，
+[GitLab.com](https://gitlab.com/Yeelight/yeelight-cli) 是全球备用源。
+
 ## 从 npm 安装
 
 ```bash
