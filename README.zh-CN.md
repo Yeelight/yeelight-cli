@@ -2,6 +2,13 @@
 
 [English](README.md)
 
+> [!CAUTION]
+> **本目录是归档的历史实现。新安装不要再使用 `yeelight-ai`。**
+> 面向用户的能力已经收敛到
+> [`yeelight-home`](https://github.com/Yeelight/yeelight-home)：它是当前唯一的
+> CLI、扫码入口、本地 Runtime、MCP 配置工具和 Cloud/LAN 工作台。本目录只保留作
+> 迁移参考，不再发布，两个 Yeelight MCP 服务也不再依赖它。
+
 ## 官方仓库与国内镜像
 
 [GitHub](https://github.com/Yeelight/yeelight-cli) 是 Issue、贡献、CI 和发布的

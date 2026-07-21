@@ -2,6 +2,14 @@
 
 [简体中文](README.zh-CN.md)
 
+> [!CAUTION]
+> **Archived historical implementation. Do not install or use `yeelight-ai` for a new setup.**
+> Its supported consumer capabilities have moved to
+> [`yeelight-home`](https://github.com/Yeelight/yeelight-home), the single current
+> CLI, sign-in entry, local Runtime, MCP setup tool, and Cloud/LAN workbench. This
+> directory remains only as migration history and is not published or used by
+> either Yeelight MCP service.
+
 ## Official Repository And Mirrors
 
 [GitHub](https://github.com/Yeelight/yeelight-cli) is the canonical source for
